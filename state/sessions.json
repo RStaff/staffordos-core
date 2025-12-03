@@ -1,0 +1,13 @@
+{
+  "sessions": [
+    {
+      "id": "2025-12-03-am",
+      "date": "2025-12-03",
+      "period": "morning",
+      "main_project_id": "ross-llm",
+      "mode_id": "ooda",
+      "intent": "Lock in v1 StaffordOS state model and avoid scope drift.",
+      "created_at": "2025-12-03T10:10:00-05:00"
+    }
+  ]
+}

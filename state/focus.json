@@ -1,0 +1,13 @@
+{
+  "current_focus": {
+    "project_id": "ross-llm",
+    "mode_id": "ooda",
+    "started_at": "2025-12-03T10:15:00-05:00",
+    "intent": "Design canonical StaffordOS state model and migrate existing scripts.",
+    "notes": [
+      "This chat is dedicated to Ross-LLM/StaffordOS, not Abando.",
+      "Goal: long-term productization, not one-off hacks."
+    ]
+  },
+  "recent_focus": []
+}

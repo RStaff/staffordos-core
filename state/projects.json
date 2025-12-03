@@ -1,0 +1,26 @@
+{
+  "projects": [
+    {
+      "id": "ross-llm",
+      "name": "Ross-LLM",
+      "status": "active",
+      "area": "platform",
+      "description": "Personal large language model + operating system for Ross.",
+      "priority": "P0",
+      "tags": ["ai", "platform", "staffordos"],
+      "last_updated": "2025-12-03",
+      "focus_notes": "Current: lock data model and CLI contracts."
+    },
+    {
+      "id": "staffordos",
+      "name": "StaffordOS",
+      "status": "active",
+      "area": "platform",
+      "description": "Meta-OS that coordinates work, focus, logging, and modes for Ross.",
+      "priority": "P0",
+      "tags": ["orchestration", "meta", "cli"],
+      "last_updated": "2025-12-03",
+      "focus_notes": "Integrate existing scripts with new JSON state."
+    }
+  ]
+}

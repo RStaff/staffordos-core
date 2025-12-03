@@ -1,0 +1,20 @@
+{
+  "modes": [
+    {
+      "id": "freeze",
+      "name": "Freeze Mode",
+      "description": "Stop taking on new threads. Only execute, close loops, and clear open tasks.",
+      "allowed_actions": ["close_task", "respond", "log"],
+      "blocked_actions": ["start_new_project", "add_scope"],
+      "default_duration_minutes": 120
+    },
+    {
+      "id": "ooda",
+      "name": "OODA Mode",
+      "description": "Observe–Orient–Decide–Act loop for strategic or chaotic situations.",
+      "allowed_actions": ["brain_dump", "map_system", "choose_play"],
+      "blocked_actions": [],
+      "default_duration_minutes": 45
+    }
+  ]
+}
