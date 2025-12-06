@@ -1,0 +1,69 @@
+// StaffordOS – Abando Client Command Center v1
+// Prisma 7-compatible schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AbandoPlanTier {
+  free
+  starter
+  growth
+  enterprise
+}
+
+enum MerchantStatus {
+  healthy
+  watch
+  broken
+  inactive
+}
+
+enum DailyStatusFlag {
+  ok
+  warning
+  error
+}
+
+model AbandoMerchant {
+  id            String                     @id @default(cuid())
+  shopDomain    String                     @unique
+  displayName   String
+  planTier      AbandoPlanTier
+  installedAt   DateTime
+  uninstalledAt DateTime?
+  status        MerchantStatus             @default(healthy)
+  lastSeenAt    DateTime?
+  notes         String?
+
+  dailyStats    AbandoMerchantDailyStat[]
+
+  createdAt     DateTime                   @default(now())
+  updatedAt     DateTime                   @updatedAt
+}
+
+model AbandoMerchantDailyStat {
+  id                    String           @id @default(cuid())
+  merchant              AbandoMerchant   @relation(fields: [merchantId], references: [id])
+  merchantId            String
+  date                  DateTime
+  cartsTotal            Int
+  cartsAbandoned        Int
+  cartsRecovered        Int
+  recoveryRate          Float
+  revenueRecoveredCents Int
+  exportOk              Boolean
+  errorsCount           Int
+  statusFlag            DailyStatusFlag
+
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  @@unique([merchantId, date])
+  @@index([date])
+}
