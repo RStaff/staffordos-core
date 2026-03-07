@@ -8,9 +8,23 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is not set in environment (.env)");
 }
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+const databaseUrl = process.env.DATABASE_URL;
+
+const shouldUseSsl =
+  !!databaseUrl &&
+  (databaseUrl.includes("sslmode=require") ||
+    (databaseUrl.includes(".com") && !databaseUrl.includes("localhost")));
+
+const pool = new Pool(
+  shouldUseSsl
+    ? {
+        connectionString: databaseUrl,
+        ssl: { rejectUnauthorized: false },
+      }
+    : {
+        connectionString: databaseUrl,
+      }
+);
 
 const app = express();
 app.use(bodyParser.json());
