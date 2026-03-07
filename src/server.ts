@@ -222,6 +222,153 @@ app.post("/abando/daily-stat", async (req: Request, res: Response) => {
   }
 });
 
+
+/**
+ * GET /abando/merchant/:shopDomain
+ * Fetch one merchant by shopDomain.
+ */
+app.get("/abando/merchant/:shopDomain", async (req: Request, res: Response) => {
+  try {
+    const shopDomain = String(req.params.shopDomain || "").trim();
+
+    if (!shopDomain) {
+      return res.status(400).json({
+        ok: false,
+        error: "shopDomain is required",
+      });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT *
+      FROM "AbandoMerchant"
+      WHERE "shopDomain" = $1
+      LIMIT 1
+      `,
+      [shopDomain],
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        ok: false,
+        error: "Merchant not found",
+      });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      merchant: result.rows[0],
+    });
+  } catch (err: any) {
+    console.error("Error in GET /abando/merchant/:shopDomain:", err);
+    return res.status(500).json({
+      ok: false,
+      error: err?.message ?? "Unknown error",
+    });
+  }
+});
+
+/**
+ * GET /abando/merchant/:shopDomain/stats
+ * Fetch daily stats for one merchant, newest first.
+ * Optional query param: ?limit=30
+ */
+app.get("/abando/merchant/:shopDomain/stats", async (req: Request, res: Response) => {
+  try {
+    const shopDomain = String(req.params.shopDomain || "").trim();
+    const limitRaw = Number(req.query.limit ?? 30);
+    const limit = Number.isFinite(limitRaw)
+      ? Math.max(1, Math.min(100, limitRaw))
+      : 30;
+
+    if (!shopDomain) {
+      return res.status(400).json({
+        ok: false,
+        error: "shopDomain is required",
+      });
+    }
+
+    const merchantRes = await pool.query(
+      `
+      SELECT *
+      FROM "AbandoMerchant"
+      WHERE "shopDomain" = $1
+      LIMIT 1
+      `,
+      [shopDomain],
+    );
+
+    if (merchantRes.rowCount === 0) {
+      return res.status(404).json({
+        ok: false,
+        error: "Merchant not found",
+      });
+    }
+
+    const merchant = merchantRes.rows[0];
+
+    const statsRes = await pool.query(
+      `
+      SELECT *
+      FROM "AbandoMerchantDailyStat"
+      WHERE "merchantId" = $1
+      ORDER BY "date" DESC
+      LIMIT $2
+      `,
+      [merchant.id, limit],
+    );
+
+    return res.status(200).json({
+      ok: true,
+      merchant,
+      stats: statsRes.rows,
+    });
+  } catch (err: any) {
+    console.error("Error in GET /abando/merchant/:shopDomain/stats:", err);
+    return res.status(500).json({
+      ok: false,
+      error: err?.message ?? "Unknown error",
+    });
+  }
+});
+
+/**
+ * GET /abando/merchants
+ * List merchants, newest installs first.
+ * Optional query param: ?limit=50
+ */
+app.get("/abando/merchants", async (req: Request, res: Response) => {
+  try {
+    const limitRaw = Number(req.query.limit ?? 50);
+    const limit = Number.isFinite(limitRaw)
+      ? Math.max(1, Math.min(200, limitRaw))
+      : 50;
+
+    const result = await pool.query(
+      `
+      SELECT *
+      FROM "AbandoMerchant"
+      ORDER BY "installedAt" DESC, "createdAt" DESC
+      LIMIT $1
+      `,
+      [limit],
+    );
+
+    return res.status(200).json({
+      ok: true,
+      merchants: result.rows,
+      count: result.rows.length,
+    });
+  } catch (err: any) {
+    console.error("Error in GET /abando/merchants:", err);
+    return res.status(500).json({
+      ok: false,
+      error: err?.message ?? "Unknown error",
+    });
+  }
+});
+
+
 const PORT = Number(process.env.PORT) || 4000;
 
 app.listen(PORT, () => {
