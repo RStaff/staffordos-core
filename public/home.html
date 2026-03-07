@@ -145,6 +145,60 @@
       color:var(--muted);
       font-size:13px;
     }
+    textarea, input, select{
+      width:100%;
+      border:1px solid var(--border);
+      background:rgba(19,32,61,.8);
+      color:var(--text);
+      padding:12px;
+      border-radius:12px;
+      font:inherit;
+    }
+    textarea{
+      min-height:120px;
+      resize:vertical;
+    }
+    .notes-toolbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .notes-list{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .note-card{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:14px;
+      background:rgba(19,32,61,.6);
+    }
+    .note-head{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+      margin-bottom:6px;
+    }
+    .note-title{
+      font-size:18px;
+      font-weight:800;
+    }
+    .note-body{
+      white-space:pre-wrap;
+      line-height:1.45;
+      color:var(--text);
+    }
+    .note-meta{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:10px;
+    }
     @media (max-width: 980px){
       .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
       .two-col{grid-template-columns:1fr}
@@ -236,6 +290,38 @@
     </div>
 
     <div class="card">
+      <h2 class="section-title">Home Base Notes</h2>
+      <div class="muted">Capture family, business, ideas, and logistics notes inside StaffordOS.</div>
+
+      <div class="notes-toolbar" style="margin-top:14px;">
+        <div style="flex:1 1 260px;">
+          <input id="noteTitle" type="text" placeholder="Note title" />
+        </div>
+        <div style="width:180px;">
+          <select id="noteCategory">
+            <option value="family">family</option>
+            <option value="business">business</option>
+            <option value="ideas">ideas</option>
+            <option value="logistics">logistics</option>
+            <option value="general">general</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <textarea id="noteBody" placeholder="Write a note for Home Base..."></textarea>
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <button id="saveNoteBtn" class="primary" type="button">Save note</button>
+        <div id="noteStatus" class="footer-note">Loading notes…</div>
+      </div>
+
+      <div id="notesEmpty" class="footer-note" style="display:none;">No notes yet.</div>
+      <div id="notesList" class="notes-list" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
       <h2 class="section-title">Current status</h2>
       <div class="pill"><span class="dot"></span>Home Base shell is live</div>
       <div class="footer-note">
@@ -243,5 +329,110 @@
       </div>
     </div>
   </div>
+
+  <script>
+  (function () {
+    const notesList = document.getElementById("notesList");
+    const notesEmpty = document.getElementById("notesEmpty");
+    const noteStatus = document.getElementById("noteStatus");
+    const saveBtn = document.getElementById("saveNoteBtn");
+    const titleEl = document.getElementById("noteTitle");
+    const bodyEl = document.getElementById("noteBody");
+    const categoryEl = document.getElementById("noteCategory");
+
+    if (!notesList || !notesEmpty || !noteStatus || !saveBtn || !titleEl || !bodyEl || !categoryEl) return;
+
+    function fmtDate(v) {
+      if (!v) return "—";
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) return String(v);
+      return d.toLocaleString();
+    }
+
+    function renderNotes(notes) {
+      notesList.innerHTML = "";
+
+      if (!notes || !notes.length) {
+        notesEmpty.style.display = "block";
+        return;
+      }
+
+      notesEmpty.style.display = "none";
+
+      notes.forEach(function (note) {
+        const card = document.createElement("div");
+        card.className = "note-card";
+        card.innerHTML = `
+          <div class="note-head">
+            <div class="note-title">${note.title || "Untitled"}</div>
+            <div class="pill"><span class="dot"></span>${note.category || "general"}</div>
+          </div>
+          <div class="note-body">${note.body || ""}</div>
+          <div class="note-meta">Created ${fmtDate(note.createdAt)}</div>
+        `;
+        notesList.appendChild(card);
+      });
+    }
+
+    async function loadNotes() {
+      noteStatus.textContent = "Loading notes…";
+      const r = await fetch("/homebase/notes?limit=25");
+      const data = await r.json();
+
+      if (!r.ok || data.ok === false) {
+        throw new Error((data && data.error) || "Failed to load notes");
+      }
+
+      renderNotes(data.notes || []);
+      noteStatus.textContent = "Notes loaded from StaffordOS.";
+    }
+
+    async function saveNote() {
+      const title = (titleEl.value || "").trim();
+      const body = (bodyEl.value || "").trim();
+      const category = (categoryEl.value || "general").trim();
+
+      if (!title || !body) {
+        noteStatus.textContent = "Title and body are required.";
+        return;
+      }
+
+      saveBtn.disabled = true;
+      noteStatus.textContent = "Saving note…";
+
+      try {
+        const r = await fetch("/homebase/notes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, body, category })
+        });
+
+        const data = await r.json();
+
+        if (!r.ok || data.ok === false) {
+          throw new Error((data && data.error) || "Failed to save note");
+        }
+
+        titleEl.value = "";
+        bodyEl.value = "";
+        categoryEl.value = "family";
+        noteStatus.textContent = "Note saved.";
+        await loadNotes();
+      } catch (err) {
+        console.error(err);
+        noteStatus.textContent = err && err.message ? err.message : String(err);
+      } finally {
+        saveBtn.disabled = false;
+      }
+    }
+
+    saveBtn.addEventListener("click", saveNote);
+
+    loadNotes().catch(function (err) {
+      console.error(err);
+      noteStatus.textContent = err && err.message ? err.message : String(err);
+    });
+  })();
+  </script>
 </body>
 </html>

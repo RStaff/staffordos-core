@@ -402,6 +402,104 @@ app.get("/abando/merchants", async (req: Request, res: Response) => {
 });
 
 
+/**
+ * GET /homebase/notes
+ * Optional query params:
+ *   ?category=family
+ *   ?limit=20
+ */
+app.get("/homebase/notes", async (req: Request, res: Response) => {
+  try {
+    const category = String(req.query.category || "").trim();
+    const rawLimit = Number(req.query.limit || 20);
+    const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(rawLimit, 100)) : 20;
+
+    let sql = `
+      SELECT "id", "title", "body", "category", "createdAt", "updatedAt"
+      FROM "HomeBaseNote"
+    `;
+    const params: any[] = [];
+
+    if (category) {
+      sql += ` WHERE "category" = $1`;
+      params.push(category);
+      sql += ` ORDER BY "createdAt" DESC LIMIT $2`;
+      params.push(limit);
+    } else {
+      sql += ` ORDER BY "createdAt" DESC LIMIT $1`;
+      params.push(limit);
+    }
+
+    const result = await pool.query(sql, params);
+
+    return res.status(200).json({
+      ok: true,
+      notes: result.rows,
+      count: result.rows.length,
+    });
+  } catch (err: any) {
+    console.error("Error in GET /homebase/notes:", err);
+    return res.status(500).json({
+      ok: false,
+      error: err?.message ?? "Unknown error",
+    });
+  }
+});
+
+/**
+ * POST /homebase/notes
+ * Body:
+ * {
+ *   "title": "Grace school note",
+ *   "body": "Reminder about Pingry paperwork.",
+ *   "category": "family"
+ * }
+ */
+app.post("/homebase/notes", async (req: Request, res: Response) => {
+  try {
+    const {
+      title,
+      body,
+      category = "general",
+    } = req.body ?? {};
+
+    const titleText = String(title || "").trim();
+    const bodyText = String(body || "").trim();
+    const categoryText = String(category || "general").trim().toLowerCase();
+
+    if (!titleText || !bodyText) {
+      return res.status(400).json({
+        ok: false,
+        error: "title and body are required",
+      });
+    }
+
+    const noteId = randomUUID();
+
+    const result = await pool.query(
+      `
+      INSERT INTO "HomeBaseNote"
+        ("id", "title", "body", "category", "createdAt", "updatedAt")
+      VALUES
+        ($1, $2, $3, $4, NOW(), NOW())
+      RETURNING *;
+      `,
+      [noteId, titleText, bodyText, categoryText],
+    );
+
+    return res.status(200).json({
+      ok: true,
+      note: result.rows[0],
+    });
+  } catch (err: any) {
+    console.error("Error in POST /homebase/notes:", err);
+    return res.status(500).json({
+      ok: false,
+      error: err?.message ?? "Unknown error",
+    });
+  }
+});
+
 const PORT = Number(process.env.PORT) || 4000;
 
 app.listen(PORT, () => {

@@ -67,3 +67,17 @@ model AbandoMerchantDailyStat {
   @@unique([merchantId, date])
   @@index([date])
 }
+
+
+model HomeBaseNote {
+  id         String   @id
+  title      String
+  body       String
+  category   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+
+  @@index([category, createdAt])
+  @@index([createdAt])
+}
+
