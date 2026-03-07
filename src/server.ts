@@ -1,5 +1,7 @@
 import "dotenv/config";
 import express, { type Request, type Response } from "express";
+import path from "path";
+import { fileURLToPath } from "url";
 import bodyParser from "body-parser";
 import { Pool } from "pg";
 import { randomUUID } from "crypto";
@@ -26,8 +28,21 @@ const pool = new Pool(
       }
 );
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const publicDir = path.resolve(__dirname, "../public");
+
 const app = express();
 app.use(bodyParser.json());
+app.use(express.static(publicDir));
+
+app.get("/", (_req: Request, res: Response) => {
+  res.sendFile(path.join(publicDir, "index.html"));
+});
+
+app.get("/command-center", (_req: Request, res: Response) => {
+  res.sendFile(path.join(publicDir, "index.html"));
+});
 
 /**
  * Health check – sanity for StaffordOS Command Center
