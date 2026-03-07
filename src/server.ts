@@ -44,6 +44,10 @@ app.get("/command-center", (_req: Request, res: Response) => {
   res.sendFile(path.join(publicDir, "index.html"));
 });
 
+app.get("/home", (_req: Request, res: Response) => {
+  res.sendFile(path.join(publicDir, "home.html"));
+});
+
 /**
  * Health check – sanity for StaffordOS Command Center
  */

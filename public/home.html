@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StaffordOS Home Base</title>
+  <style>
+    :root{
+      --bg:#081225;
+      --panel:#101a33;
+      --panel2:#13203d;
+      --text:#eef2ff;
+      --muted:#a9b4d0;
+      --accent:#5b8cff;
+      --border:#243252;
+      --good:#19c37d;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      background:linear-gradient(180deg,#07101f 0%, #0a1428 100%);
+      color:var(--text);
+    }
+    .wrap{
+      max-width:1200px;
+      margin:0 auto;
+      padding:32px 20px 64px;
+    }
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      margin-bottom:24px;
+      flex-wrap:wrap;
+    }
+    .title{
+      font-size:40px;
+      font-weight:800;
+      letter-spacing:-0.03em;
+      margin:0;
+    }
+    .subtitle{
+      color:var(--muted);
+      margin-top:8px;
+      font-size:16px;
+      max-width:760px;
+    }
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    a.btn, button{
+      border:1px solid var(--border);
+      background:var(--panel2);
+      color:var(--text);
+      padding:12px 16px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:600;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .primary{
+      background:var(--accent);
+      border-color:transparent;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:16px;
+      margin-bottom:24px;
+    }
+    .card{
+      background:rgba(16,26,51,.94);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:18px;
+      box-shadow:0 8px 30px rgba(0,0,0,.18);
+    }
+    .label{
+      color:var(--muted);
+      font-size:14px;
+      margin-bottom:10px;
+    }
+    .value{
+      font-size:30px;
+      font-weight:800;
+      letter-spacing:-0.03em;
+    }
+    .two-col{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+      margin-bottom:16px;
+    }
+    .section-title{
+      margin:0 0 12px;
+      font-size:22px;
+      font-weight:800;
+    }
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:12px;
+    }
+    .item{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:12px;
+      background:rgba(19,32,61,.6);
+    }
+    .item-title{
+      font-weight:700;
+      margin-bottom:4px;
+    }
+    .muted{
+      color:var(--muted);
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      font-weight:700;
+      border:1px solid var(--border);
+      background:#0d1830;
+    }
+    .dot{
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      background:var(--good);
+      display:inline-block;
+    }
+    .footer-note{
+      margin-top:20px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .two-col{grid-template-columns:1fr}
+    }
+    @media (max-width: 640px){
+      .grid{grid-template-columns:1fr}
+      .title{font-size:32px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1 class="title">StaffordOS Home Base</h1>
+        <div class="subtitle">
+          Personal and family operating shell for schedules, documents, shared notes, tasks, and RossLLM collaboration.
+        </div>
+      </div>
+      <div class="actions">
+        <a class="btn primary" href="/command-center">Open Founder Center</a>
+        <a class="btn" href="/health">API health</a>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="label">Family schedules</div>
+        <div class="value">Planned</div>
+      </div>
+      <div class="card">
+        <div class="label">Shared documents</div>
+        <div class="value">Planned</div>
+      </div>
+      <div class="card">
+        <div class="label">RossLLM chat</div>
+        <div class="value">Next</div>
+      </div>
+      <div class="card">
+        <div class="label">Home workflows</div>
+        <div class="value">Growing</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <h2 class="section-title">What Home Base will handle</h2>
+        <div class="list">
+          <div class="item">
+            <div class="item-title">Family scheduling</div>
+            <div class="muted">Track the girls’ schedules, shared events, and routines in one place.</div>
+          </div>
+          <div class="item">
+            <div class="item-title">Document hub</div>
+            <div class="muted">Upload and organize school, legal, business, and family files.</div>
+          </div>
+          <div class="item">
+            <div class="item-title">Shared collaboration</div>
+            <div class="muted">A safe place for you and the girls to interact with RossLLM together over time.</div>
+          </div>
+          <div class="item">
+            <div class="item-title">Life operations</div>
+            <div class="muted">Tasks, reminders, notes, planning, and future family dashboards.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">Modular command center vision</h2>
+        <div class="list">
+          <div class="item">
+            <div class="item-title">/command-center</div>
+            <div class="muted">Abando founder operations and merchant intelligence.</div>
+          </div>
+          <div class="item">
+            <div class="item-title">/home</div>
+            <div class="muted">Home Base for family life, schedules, uploads, and collaboration.</div>
+          </div>
+          <div class="item">
+            <div class="item-title">/nka</div>
+            <div class="muted">No Kings Athletics hub for brand, content, products, and operations.</div>
+          </div>
+          <div class="item">
+            <div class="item-title">/rossllm</div>
+            <div class="muted">Unified conversational layer across all StaffordOS modules.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Current status</h2>
+      <div class="pill"><span class="dot"></span>Home Base shell is live</div>
+      <div class="footer-note">
+        Next versions should add schedules, uploads, notes, and RossLLM chat.
+      </div>
+    </div>
+  </div>
+</body>
+</html>
