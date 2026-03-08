@@ -1,493 +1,260 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>StaffordOS Command Center</title>
-  <style>
-    :root{
-      --bg:#081225;
-      --panel:#101a33;
-      --panel2:#13203d;
-      --text:#eef2ff;
-      --muted:#a9b4d0;
-      --accent:#5b8cff;
-      --border:#243252;
-      --good:#19c37d;
-      --warn:#f5a524;
-      --bad:#ef4444;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-      background:linear-gradient(180deg,#07101f 0%, #0a1428 100%);
-      color:var(--text);
-    }
-    .wrap{
-      max-width:1200px;
-      margin:0 auto;
-      padding:32px 20px 64px;
-    }
-    .topbar{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:16px;
-      margin-bottom:24px;
-      flex-wrap:wrap;
-    }
-    .title{
-      font-size:40px;
-      font-weight:800;
-      letter-spacing:-0.03em;
-      margin:0;
-    }
-    .subtitle{
-      color:var(--muted);
-      margin-top:8px;
-      font-size:16px;
-    }
-    .actions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-    button{
-      border:1px solid var(--border);
-      background:var(--panel2);
-      color:var(--text);
-      padding:12px 16px;
-      border-radius:12px;
-      cursor:pointer;
-      font-weight:600;
-    }
-    button.primary{
-      background:var(--accent);
-      border-color:transparent;
-    }
-    .grid{
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:16px;
-      margin-bottom:24px;
-    }
-    .card{
-      background:rgba(16,26,51,.94);
-      border:1px solid var(--border);
-      border-radius:16px;
-      padding:18px;
-      box-shadow:0 8px 30px rgba(0,0,0,.18);
-    }
-    .kpi-label{
-      color:var(--muted);
-      font-size:14px;
-      margin-bottom:10px;
-    }
-    .kpi-value{
-      font-size:32px;
-      font-weight:800;
-      letter-spacing:-0.03em;
-    }
-    .two-col{
-      display:grid;
-      grid-template-columns:1.1fr .9fr;
-      gap:16px;
-    }
-    .section-title{
-      margin:0 0 14px;
-      font-size:20px;
-      font-weight:800;
-    }
-    .merchant-list{
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
-    .merchant-item{
-      border:1px solid var(--border);
-      background:rgba(19,32,61,.75);
-      border-radius:14px;
-      padding:14px;
-      cursor:pointer;
-    }
-    .merchant-item.active{
-      outline:2px solid var(--accent);
-    }
-    .merchant-top{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-    .merchant-name{
-      font-size:18px;
-      font-weight:700;
-    }
-    .merchant-domain{
-      color:var(--muted);
-      font-size:13px;
-      margin-top:4px;
-      word-break:break-word;
-    }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      border-radius:999px;
-      padding:6px 10px;
-      font-size:12px;
-      font-weight:700;
-      border:1px solid var(--border);
-      background:#0d1830;
-    }
-    .dot{
-      width:8px;
-      height:8px;
-      border-radius:999px;
-      display:inline-block;
-    }
-    .dot.healthy,.dot.ok{background:var(--good)}
-    .dot.watch,.dot.warning{background:var(--warn)}
-    .dot.broken,.dot.error,.dot.inactive{background:var(--bad)}
-    .detail-grid{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:12px;
-      margin-top:12px;
-    }
-    .detail{
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:12px;
-      background:rgba(19,32,61,.55);
-    }
-    .detail .label{
-      color:var(--muted);
-      font-size:12px;
-      margin-bottom:6px;
-    }
-    .detail .value{
-      font-size:15px;
-      font-weight:700;
-      word-break:break-word;
-    }
-    table{
-      width:100%;
-      border-collapse:collapse;
-      margin-top:10px;
-      font-size:14px;
-    }
-    th,td{
-      text-align:left;
-      padding:10px 8px;
-      border-bottom:1px solid var(--border);
-      vertical-align:top;
-    }
-    th{
-      color:var(--muted);
-      font-weight:700;
-      font-size:12px;
-      text-transform:uppercase;
-      letter-spacing:.04em;
-    }
-    .muted{color:var(--muted)}
-    .empty{
-      color:var(--muted);
-      border:1px dashed var(--border);
-      border-radius:12px;
-      padding:18px;
-      text-align:center;
-      margin-top:12px;
-    }
-    .footer-note{
-      margin-top:20px;
-      color:var(--muted);
-      font-size:13px;
-    }
-    @media (max-width: 980px){
-      .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .two-col{grid-template-columns:1fr}
-    }
-    @media (max-width: 640px){
-      .grid{grid-template-columns:1fr}
-      .detail-grid{grid-template-columns:1fr}
-      .title{font-size:32px}
-    }
-  </style>
+<meta charset="UTF-8">
+<title>StaffordOS Command Center</title>
+
+<style>
+body{
+font-family:system-ui;
+background:#0b1220;
+color:white;
+margin:0;
+padding:40px;
+}
+
+h1{
+margin-bottom:30px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:20px;
+margin-bottom:30px;
+}
+
+.card{
+background:#131c33;
+padding:20px;
+border-radius:10px;
+}
+
+.metric{
+font-size:28px;
+font-weight:700;
+}
+
+.label{
+opacity:.7;
+font-size:14px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+td,th{
+padding:10px;
+border-bottom:1px solid #1e2a4a;
+}
+
+button{
+background:#4c6fff;
+border:none;
+padding:10px 16px;
+color:white;
+border-radius:6px;
+cursor:pointer;
+}
+</style>
 </head>
+
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <div>
-        <h1 class="title">StaffordOS Command Center</h1>
-        <div class="subtitle">Founder control plane for Abando merchant installs, health, and recovery stats.</div>
-      </div>
-      <div class="actions">
-        <button id="refreshBtn" class="primary">Refresh data</button>
-        <button id="openApiBtn">Open API health</button>
-      </div>
+
+<h1>StaffordOS Command Center</h1>
+
+<div class="grid">
+<div class="card">
+<div class="label">Total Merchants</div>
+<div id="merchants" class="metric">--</div>
+</div>
+
+<div class="card">
+<div class="label">Recovered Revenue</div>
+<div id="revenue" class="metric">$--</div>
+</div>
+
+<div class="card">
+<div class="label">Recovered Carts</div>
+<div id="carts" class="metric">--</div>
+</div>
+
+<div class="card">
+<div class="label">Abandoned Carts</div>
+<div id="messages" class="metric">--</div>
+</div>
+</div>
+
+<h2>Merchant Status</h2>
+
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Count</th>
+<th>Revenue</th>
+</tr>
+</thead>
+
+<tbody id="merchantTable">
+</tbody>
+</table>
+
+<h2>Live Activity</h2>
+<div id="liveActivity" style="display:flex;flex-direction:column;gap:12px;margin-top:20px;"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+
+
+let socket = null
+let currentRevenueCents = 0
+let currentRecovered = 0
+let currentAbandoned = 0
+
+function fmtMoney(cents){
+  return "$" + ((Number(cents || 0) / 100).toFixed(0))
+}
+
+function fmtRelativeTime(v){
+  if(!v) return "just now"
+  const d = new Date(v)
+  if(Number.isNaN(d.getTime())) return String(v)
+  const diffSec = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000))
+  const diffMin = Math.floor(diffSec / 60)
+  const diffHr = Math.floor(diffMin / 60)
+  if(diffSec < 10) return "just now"
+  if(diffSec < 60) return diffSec + " sec ago"
+  if(diffMin < 60) return diffMin + " min ago"
+  if(diffHr < 24) return diffHr + " hour" + (diffHr === 1 ? "" : "s") + " ago"
+  return d.toLocaleString()
+}
+
+function prependLiveActivity(ev){
+  const wrap = document.getElementById("liveActivity")
+  if(!wrap) return
+
+  const card = document.createElement("div")
+  card.style.border = "1px solid #1e2a4a"
+  card.style.borderRadius = "12px"
+  card.style.padding = "14px"
+  card.style.background = "#131c33"
+
+  const money = Number(ev.recoveredRevenueCents || ev.cartValueCents || 0)
+
+  card.innerHTML = `
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px;">
+      <div style="font-weight:800;">${fmtMoney(money)} recovered</div>
+      <div style="opacity:.72;">${fmtRelativeTime(ev.recoveredAt || ev.createdAt)}</div>
     </div>
+    <div style="opacity:.9;">${ev.shopDomain || "unknown shop"} via ${ev.playbook || "playbook"}</div>
+    <div style="opacity:.72;margin-top:6px;">Cart: ${ev.cartId || "—"} · Order: ${ev.orderId || "—"}</div>
+  `
 
-    <div class="grid">
-      <div class="card">
-        <div class="kpi-label">Total merchants</div>
-        <div class="kpi-value" id="kpiMerchants">—</div>
-      </div>
-      <div class="card">
-        <div class="kpi-label">Healthy merchants</div>
-        <div class="kpi-value" id="kpiHealthy">—</div>
-      </div>
-      <div class="card">
-        <div class="kpi-label">Total recovered revenue</div>
-        <div class="kpi-value" id="kpiRevenue">$—</div>
-      </div>
-      <div class="card">
-        <div class="kpi-label">Recovered carts</div>
-        <div class="kpi-value" id="kpiRecovered">—</div>
-      </div>
-    </div>
+  wrap.prepend(card)
 
-    <div class="two-col">
-      <div class="card">
-        <h2 class="section-title">Merchants</h2>
-        <div id="merchantList" class="merchant-list"></div>
-        <div id="merchantListEmpty" class="empty" style="display:none;">No merchants found yet.</div>
-      </div>
+  while (wrap.children.length > 8) {
+    wrap.removeChild(wrap.lastChild)
+  }
+}
 
-      <div class="card">
-        <h2 class="section-title">Merchant detail</h2>
-        <div id="detailEmpty" class="empty">Select a merchant to inspect stats and recent activity.</div>
-        <div id="detailWrap" style="display:none;">
-          <div class="merchant-top">
-            <div>
-              <div class="merchant-name" id="detailName">—</div>
-              <div class="merchant-domain" id="detailDomain">—</div>
-            </div>
-            <div class="pill"><span id="detailStatusDot" class="dot healthy"></span><span id="detailStatusText">healthy</span></div>
-          </div>
+function connectFounderSocket(){
+  if(typeof io === "undefined"){
+    console.warn("Socket.IO client not loaded")
+    return
+  }
 
-          <div class="detail-grid">
-            <div class="detail"><div class="label">Plan tier</div><div class="value" id="detailPlan">—</div></div>
-            <div class="detail"><div class="label">Installed at</div><div class="value" id="detailInstalled">—</div></div>
-            <div class="detail"><div class="label">Last seen</div><div class="value" id="detailLastSeen">—</div></div>
-            <div class="detail"><div class="label">Merchant ID</div><div class="value" id="detailId">—</div></div>
-          </div>
+  socket = io()
 
-          <h3 class="section-title" style="margin-top:18px;">Recent stats</h3>
-          <div id="statsEmpty" class="empty" style="display:none;">No daily stats yet for this merchant.</div>
-          <table id="statsTable" style="display:none;">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Recovered</th>
-                <th>Revenue</th>
-                <th>Rate</th>
-              </tr>
-            </thead>
-            <tbody id="statsBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+  socket.on("connect", () => {
+    socket.emit("subscribe:founder")
+    console.log("[founder-socket] connected", socket.id)
+  })
 
-    <div class="footer-note" id="footerNote">Loading…</div>
-  </div>
+  socket.on("recovery_event_created", (payload) => {
+    const ev = payload && payload.recoveryEvent ? payload.recoveryEvent : payload
+    if(!ev) return
 
-  <script>
-    const state = {
-      merchants: [],
-      selectedShop: null,
-      statsByShop: {}
-    };
+    const addedRevenue = Number(ev.recoveredRevenueCents || ev.cartValueCents || 0)
+    currentRevenueCents += addedRevenue
+    currentRecovered += String(ev.status || "").toLowerCase() === "recovered" ? 1 : 0
+    currentAbandoned = Math.max(currentAbandoned, currentRecovered)
 
-    function moneyFromCents(cents) {
-      const dollars = (Number(cents || 0) / 100);
-      return dollars.toLocaleString(undefined, { style: "currency", currency: "USD" });
-    }
+    document.getElementById("revenue").innerText = fmtMoney(currentRevenueCents)
+    document.getElementById("carts").innerText = currentRecovered
+    document.getElementById("messages").innerText = currentAbandoned
 
-    function fmtDate(v) {
-      if (!v) return "—";
-      const d = new Date(v);
-      if (Number.isNaN(d.getTime())) return String(v);
-      return d.toLocaleString();
-    }
+    prependLiveActivity(ev)
+  })
+}
 
-    function statusClass(v) {
-      return String(v || "").toLowerCase();
-    }
 
-    function setFooter(msg) {
-      document.getElementById("footerNote").textContent = msg;
-    }
+async function loadAnalytics(){
 
-    async function getJson(url) {
-      const r = await fetch(url, { headers: { "Accept": "application/json" } });
-      const data = await r.json();
-      if (!r.ok || data.ok === false) {
-        throw new Error((data && data.error) || ("Request failed for " + url));
-      }
-      return data;
-    }
+const res = await fetch("/abando/analytics/overview")
+const data = await res.json()
 
-    function renderKpis() {
-      const merchants = state.merchants || [];
-      const healthy = merchants.filter(m => String(m.status || "").toLowerCase() === "healthy").length;
+document.getElementById("merchants").innerText =
+data.overview.total_merchants ?? 0
 
-      let totalRevenueCents = 0;
-      let totalRecovered = 0;
+currentRevenueCents = Number(data.overview.total_revenue_cents || 0)
+currentRecovered = Number(data.overview.total_carts_recovered || 0)
+currentAbandoned = Number(data.overview.total_carts_abandoned || 0)
 
-      for (const shop of Object.keys(state.statsByShop)) {
-        const stats = state.statsByShop[shop] || [];
-        for (const row of stats) {
-          totalRevenueCents += Number(row.revenueRecoveredCents || 0);
-          totalRecovered += Number(row.cartsRecovered || 0);
-        }
-      }
+document.getElementById("revenue").innerText =
+fmtMoney(currentRevenueCents)
 
-      document.getElementById("kpiMerchants").textContent = String(merchants.length);
-      document.getElementById("kpiHealthy").textContent = String(healthy);
-      document.getElementById("kpiRevenue").textContent = moneyFromCents(totalRevenueCents);
-      document.getElementById("kpiRecovered").textContent = String(totalRecovered);
-    }
+document.getElementById("carts").innerText =
+currentRecovered
 
-    function renderMerchants() {
-      const list = document.getElementById("merchantList");
-      const empty = document.getElementById("merchantListEmpty");
-      list.innerHTML = "";
+document.getElementById("messages").innerText =
+currentAbandoned
 
-      if (!state.merchants.length) {
-        empty.style.display = "block";
-        return;
-      }
+const table = document.getElementById("merchantTable")
 
-      empty.style.display = "none";
+table.innerHTML=""
 
-      for (const m of state.merchants) {
-        const item = document.createElement("div");
-        item.className = "merchant-item" + (state.selectedShop === m.shopDomain ? " active" : "");
-        item.innerHTML = `
-          <div class="merchant-top">
-            <div>
-              <div class="merchant-name">${m.displayName || m.shopDomain}</div>
-              <div class="merchant-domain">${m.shopDomain}</div>
-            </div>
-            <div class="pill"><span class="dot ${statusClass(m.status)}"></span>${m.status || "unknown"}</div>
-          </div>
-          <div class="muted" style="margin-top:10px;font-size:13px;">
-            Plan: ${m.planTier || "—"} · Last seen: ${fmtDate(m.lastSeenAt)}
-          </div>
-        `;
-        item.addEventListener("click", async () => {
-          state.selectedShop = m.shopDomain;
-          renderMerchants();
-          await ensureStatsLoaded(m.shopDomain);
-          renderDetail();
-          renderKpis();
-        });
-        list.appendChild(item);
-      }
-    }
+data.merchantMix.forEach(m=>{
 
-    function renderDetail() {
-      const wrap = document.getElementById("detailWrap");
-      const empty = document.getElementById("detailEmpty");
-      const selected = state.merchants.find(m => m.shopDomain === state.selectedShop);
+const tr=document.createElement("tr")
 
-      if (!selected) {
-        wrap.style.display = "none";
-        empty.style.display = "block";
-        return;
-      }
+tr.innerHTML=`
+<td>${m.status}</td>
+<td>${m.count}</td>
+<td>—</td>
+`
 
-      empty.style.display = "none";
-      wrap.style.display = "block";
+table.appendChild(tr)
 
-      document.getElementById("detailName").textContent = selected.displayName || selected.shopDomain;
-      document.getElementById("detailDomain").textContent = selected.shopDomain;
-      document.getElementById("detailPlan").textContent = selected.planTier || "—";
-      document.getElementById("detailInstalled").textContent = fmtDate(selected.installedAt);
-      document.getElementById("detailLastSeen").textContent = fmtDate(selected.lastSeenAt);
-      document.getElementById("detailId").textContent = selected.id || "—";
+})
 
-      const dot = document.getElementById("detailStatusDot");
-      const text = document.getElementById("detailStatusText");
-      dot.className = "dot " + statusClass(selected.status);
-      text.textContent = selected.status || "unknown";
+const activity = document.getElementById("liveActivity")
+if (activity) {
+  activity.innerHTML = ""
 
-      const stats = state.statsByShop[selected.shopDomain] || [];
-      const statsBody = document.getElementById("statsBody");
-      const statsTable = document.getElementById("statsTable");
-      const statsEmpty = document.getElementById("statsEmpty");
+  ;(data.recentStats || []).forEach(stat => {
+    prependLiveActivity({
+      shopDomain: stat.shopDomain,
+      cartId: "—",
+      orderId: "—",
+      recoveredRevenueCents: stat.revenueRecoveredCents || 0,
+      recoveredAt: stat.updatedAt || stat.createdAt,
+      createdAt: stat.createdAt,
+      playbook: "daily_stat",
+      status: "recovered",
+    })
+  })
+}
 
-      statsBody.innerHTML = "";
+}
 
-      if (!stats.length) {
-        statsTable.style.display = "none";
-        statsEmpty.style.display = "block";
-        return;
-      }
+loadAnalytics()
+connectFounderSocket()
 
-      statsEmpty.style.display = "none";
-      statsTable.style.display = "table";
+</script>
 
-      for (const row of stats) {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${fmtDate(row.date)}</td>
-          <td><span class="pill"><span class="dot ${statusClass(row.statusFlag)}"></span>${row.statusFlag || "ok"}</span></td>
-          <td>${Number(row.cartsRecovered || 0)} / ${Number(row.cartsTotal || 0)}</td>
-          <td>${moneyFromCents(row.revenueRecoveredCents || 0)}</td>
-          <td>${(Number(row.recoveryRate || 0) * 100).toFixed(1)}%</td>
-        `;
-        statsBody.appendChild(tr);
-      }
-    }
-
-    async function ensureStatsLoaded(shopDomain) {
-      if (!shopDomain) return;
-      const data = await getJson(`/abando/merchant/${encodeURIComponent(shopDomain)}/stats?limit=10`);
-      state.statsByShop[shopDomain] = data.stats || [];
-    }
-
-    async function loadAll() {
-      setFooter("Loading merchants…");
-      const merchantsRes = await getJson("/abando/merchants");
-      state.merchants = merchantsRes.merchants || [];
-
-      if (state.merchants.length && !state.selectedShop) {
-        state.selectedShop = state.merchants[0].shopDomain;
-      }
-
-      if (state.selectedShop) {
-        await ensureStatsLoaded(state.selectedShop);
-      }
-
-      renderMerchants();
-      renderDetail();
-      renderKpis();
-      setFooter(`Loaded ${state.merchants.length} merchant(s) from StaffordOS.`);
-    }
-
-    document.getElementById("refreshBtn").addEventListener("click", async () => {
-      try {
-        await loadAll();
-      } catch (err) {
-        console.error(err);
-        setFooter("Refresh failed: " + (err && err.message ? err.message : String(err)));
-      }
-    });
-
-    document.getElementById("openApiBtn").addEventListener("click", () => {
-      window.open("/health", "_blank");
-    });
-
-    loadAll().catch(err => {
-      console.error(err);
-      setFooter("Initial load failed: " + (err && err.message ? err.message : String(err)));
-    });
-  </script>
 </body>
 </html>
