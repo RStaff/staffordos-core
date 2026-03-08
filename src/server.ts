@@ -798,6 +798,43 @@ app.post("/abando/recovery-events", async (req: Request, res: Response) => {
     }
 
     const merchantId: string = merchantRes.rows[0].id;
+
+    let existingRes;
+    const cleanOrderId = orderId ? String(orderId).trim() : "";
+    const cleanCheckoutId = checkoutId ? String(checkoutId).trim() : "";
+
+    if (cleanOrderId) {
+      existingRes = await pool.query(
+        `
+        SELECT *
+        FROM "AbandoRecoveryEvent"
+        WHERE "shopDomain" = $1
+          AND "orderId" = $2
+        LIMIT 1
+        `,
+        [cleanShopDomain, cleanOrderId]
+      );
+    } else if (cleanCheckoutId) {
+      existingRes = await pool.query(
+        `
+        SELECT *
+        FROM "AbandoRecoveryEvent"
+        WHERE "shopDomain" = $1
+          AND "checkoutId" = $2
+        LIMIT 1
+        `,
+        [cleanShopDomain, cleanCheckoutId]
+      );
+    }
+
+    if (existingRes && existingRes.rowCount && existingRes.rowCount > 0) {
+      return res.status(200).json({
+        ok: true,
+        deduped: true,
+        recoveryEvent: existingRes.rows[0],
+      });
+    }
+
     const recoveryEventId = randomUUID();
 
     const detectedDate = detectedAt ? new Date(detectedAt) : new Date();
