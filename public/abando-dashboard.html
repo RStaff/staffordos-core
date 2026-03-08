@@ -365,7 +365,33 @@
     let socket = null;
     const liveFlash = document.getElementById("liveFlash");
 
-    function flashLiveRecovery(message = "Live recovery received") {
+    
+    function prependRecoveryEvent(ev) {
+      const feed = document.getElementById("recoveryFeed");
+      if (!feed) return;
+
+      const item = document.createElement("div");
+      item.className = "feed-item";
+
+      const money = ((ev.recoveredRevenueCents || ev.cartValueCents || 0) / 100).toFixed(2);
+
+      item.innerHTML = `
+        <div class="feed-top">
+          <div>
+            <div class="money">$${money}</div>
+            <div>recovered via ${ev.playbook || "playbook"}</div>
+          </div>
+          <div class="muted">${fmtRelativeTime(ev.recoveredAt || ev.createdAt)}</div>
+        </div>
+        <div class="muted">
+          Cart: ${ev.cartId || "—"} · Order: ${ev.orderId || "—"}
+        </div>
+      `;
+
+      feed.prepend(item);
+    }
+
+function flashLiveRecovery(message = "Live recovery received") {
       if (!liveFlash) return;
       liveFlash.textContent = message;
       liveFlash.classList.add("show");
@@ -455,6 +481,46 @@ const refreshBtn = document.getElementById("refreshBtn");
       return d.toLocaleString();
     }
 
+    function fmtRelativeTime(v) {
+      if (!v) return "—";
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) return String(v);
+
+      const diffMs = Date.now() - d.getTime();
+      const diffSec = Math.max(0, Math.floor(diffMs / 1000));
+      const diffMin = Math.floor(diffSec / 60);
+      const diffHr = Math.floor(diffMin / 60);
+      const diffDay = Math.floor(diffHr / 24);
+
+      if (diffSec < 10) return "just now";
+      if (diffSec < 60) return diffSec + " sec ago";
+      if (diffMin < 60) return diffMin + (diffMin === 1 ? " min ago" : " min ago");
+      if (diffHr < 24) return diffHr + (diffHr === 1 ? " hour ago" : " hours ago");
+      if (diffDay < 7) return diffDay + (diffDay === 1 ? " day ago" : " days ago");
+
+      return d.toLocaleString();
+    }
+
+    function fmtRelativeTime(v) {
+      if (!v) return "—";
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) return String(v);
+
+      const diffMs = Date.now() - d.getTime();
+      const diffSec = Math.max(0, Math.floor(diffMs / 1000));
+      const diffMin = Math.floor(diffSec / 60);
+      const diffHr = Math.floor(diffMin / 60);
+      const diffDay = Math.floor(diffHr / 24);
+
+      if (diffSec < 10) return "just now";
+      if (diffSec < 60) return diffSec + " sec ago";
+      if (diffMin < 60) return diffMin + (diffMin === 1 ? " min ago" : " min ago");
+      if (diffHr < 24) return diffHr + (diffHr === 1 ? " hour ago" : " hours ago");
+      if (diffDay < 7) return diffDay + (diffDay === 1 ? " day ago" : " days ago");
+
+      return d.toLocaleString();
+    }
+
     function esc(v) {
       return String(v ?? "")
         .replaceAll("&", "&amp;")
@@ -517,7 +583,7 @@ const refreshBtn = document.getElementById("refreshBtn");
               <div class="money">${fmtMoney(event.recoveredRevenueCents || event.cartValueCents || 0)}</div>
               <div>${esc(event.status || "detected")} via ${esc(event.playbook || "default")}</div>
             </div>
-            <div class="muted">${fmtDate(event.recoveredAt || event.detectedAt || event.createdAt)}</div>
+            <div class="muted">${fmtRelativeTime(event.recoveredAt || event.detectedAt || event.createdAt)}</div>
           </div>
           <div class="muted">
             Cart: ${esc(event.cartId || "—")} · Order: ${esc(event.orderId || "—")}
