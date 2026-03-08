@@ -364,6 +364,7 @@
     // ---- WebSocket Live Feed ----
     let socket = null;
     const liveFlash = document.getElementById("liveFlash");
+    const seenRecoveryEventIds = new Set();
 
     
     function prependRecoveryEvent(ev) {
@@ -424,6 +425,8 @@ function flashLiveRecovery(message = "Live recovery received") {
         const payloadShop = event && event.shopDomain ? event.shopDomain : payload && payload.shopDomain;
 
         if (!payload || payloadShop !== shopDomain) return;
+        if (payload.id && seenRecoveryEventIds.has(payload.id)) return;
+        if (payload.id) seenRecoveryEventIds.add(payload.id);
 
         prependRecoveryEvent(payload);
 
@@ -574,6 +577,7 @@ const refreshBtn = document.getElementById("refreshBtn");
       feedEmpty.style.display = "none";
 
       events.forEach((event) => {
+        if (event && event.id) seenRecoveryEventIds.add(event.id);
         const item = document.createElement("div");
         item.className = "feed-item";
 

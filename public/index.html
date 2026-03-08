@@ -114,6 +114,7 @@ let socket = null
 let currentRevenueCents = 0
 let currentRecovered = 0
 let currentAbandoned = 0
+const seenRecoveryEventIds = new Set()
 
 function fmtMoney(cents){
   return "$" + ((Number(cents || 0) / 100).toFixed(0))
@@ -177,6 +178,8 @@ function connectFounderSocket(){
   socket.on("recovery_event_created", (payload) => {
     const ev = payload && payload.recoveryEvent ? payload.recoveryEvent : payload
     if(!ev) return
+    if(ev.id && seenRecoveryEventIds.has(ev.id)) return
+    if(ev.id) seenRecoveryEventIds.add(ev.id)
 
     const addedRevenue = Number(ev.recoveredRevenueCents || ev.cartValueCents || 0)
     currentRevenueCents += addedRevenue
@@ -236,6 +239,7 @@ if (activity) {
   activity.innerHTML = ""
 
   ;(data.recentStats || []).forEach(stat => {
+    if (stat && stat.id) seenRecoveryEventIds.add(stat.id)
     prependLiveActivity({
       shopDomain: stat.shopDomain,
       cartId: "—",
