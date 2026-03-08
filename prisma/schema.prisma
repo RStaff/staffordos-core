@@ -97,3 +97,82 @@ model HomeBaseEvent {
   @@index([category, startsAt])
 }
 
+model AbandoWebhookEvent {
+  id             String   @id
+  shopDomain     String
+  topic          String
+  shopifyEventId String?
+  payloadJson    String
+  receivedAt     DateTime @default(now())
+  processedAt    DateTime?
+  status         String
+  errorMessage   String?
+  createdAt      DateTime @default(now())
+
+  @@index([shopDomain, receivedAt])
+  @@index([topic, receivedAt])
+  @@index([shopifyEventId])
+  @@index([status, receivedAt])
+}
+
+model AbandoNotificationEvent {
+  id                String   @id
+  merchantId        String
+  shopDomain        String
+  channel           String
+  templateKey       String
+  recipient         String?
+  status            String
+  providerMessageId String?
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  failedAt          DateTime?
+  errorMessage      String?
+  createdAt         DateTime @default(now())
+
+  @@index([merchantId, createdAt])
+  @@index([shopDomain, createdAt])
+  @@index([status, createdAt])
+  @@index([channel, createdAt])
+}
+
+model AbandoRecoveryEvent {
+  id                    String   @id
+  merchantId            String
+  shopDomain            String
+  cartId                String?
+  checkoutId            String?
+  customerId            String?
+  orderId               String?
+  cartValueCents        Int      @default(0)
+  status                String
+  detectedAt            DateTime @default(now())
+  messageSentAt         DateTime?
+  recoveredAt           DateTime?
+  recoveredRevenueCents Int      @default(0)
+  playbook              String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime
+
+  @@index([merchantId, detectedAt])
+  @@index([shopDomain, detectedAt])
+  @@index([status, detectedAt])
+  @@index([recoveredAt])
+}
+
+model AbandoMerchantHealth {
+  id                 String   @id
+  merchantId         String
+  shopDomain         String   @unique
+  status             String
+  lastWebhookAt      DateTime?
+  lastRecoveryAt     DateTime?
+  lastNotificationAt DateTime?
+  openIssueCount     Int      @default(0)
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime
+
+  @@index([merchantId])
+  @@index([status, updatedAt])
+}
