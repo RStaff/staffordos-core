@@ -315,7 +315,8 @@
     <div class="status-line" id="statusLine">Loading Abando dashboard…</div>
   </div>
 
-  <script>
+  <script src="/socket.io/socket.io.js"></script>
+<script>
     const params = new URLSearchParams(window.location.search || "");
     const shopDomain = (params.get("shop") || "demo-store.myshopify.com").trim();
     const liveMode = params.get("live") === "1";
@@ -338,7 +339,47 @@
     const lastRecovery = document.getElementById("lastRecovery");
     const healthNotes = document.getElementById("healthNotes");
 
-    const refreshBtn = document.getElementById("refreshBtn");
+    
+    // ---- WebSocket Live Feed ----
+    let socket = null;
+
+    function connectSocket(shopDomain) {
+      if (!window.io) {
+        console.warn("Socket.IO not loaded");
+        return;
+      }
+
+      socket = io();
+
+      socket.on("connect", () => {
+        console.log("[socket] connected", socket.id);
+        socket.emit("subscribe:shop", shopDomain);
+      });
+
+      socket.on("disconnect", () => {
+        console.log("[socket] disconnected");
+      });
+
+      socket.on("recovery_event_created", (event) => {
+        console.log("[socket] recovery_event_created", event);
+
+        if (!event || !event.shopDomain) return;
+
+        const feed = document.getElementById("recoveryFeed");
+        if (!feed) return;
+
+        const li = document.createElement("li");
+        li.textContent =
+          "Recovered $" +
+          (event.recoveredRevenueCents / 100).toFixed(2) +
+          " via " +
+          (event.playbook || "playbook");
+
+        feed.prepend(li);
+      });
+    }
+
+const refreshBtn = document.getElementById("refreshBtn");
     const statusLine = document.getElementById("statusLine");
 
     function fmtMoney(cents) {
@@ -542,6 +583,7 @@
 
     refreshBtn.addEventListener("click", refreshAll);
     refreshAll();
+    connectSocket(shopDomain);
   </script>
 </body>
 </html>
