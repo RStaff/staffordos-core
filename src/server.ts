@@ -500,6 +500,118 @@ app.post("/homebase/notes", async (req: Request, res: Response) => {
   }
 });
 
+
+/**
+ * GET /homebase/events
+ * Returns recent/upcoming Home Base events.
+ */
+app.get("/homebase/events", async (_req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      `
+      SELECT *
+      FROM "HomeBaseEvent"
+      ORDER BY "startsAt" ASC, "createdAt" DESC
+      LIMIT 50;
+      `
+    );
+
+    return res.status(200).json({
+      ok: true,
+      events: result.rows,
+      count: result.rows.length,
+    });
+  } catch (err: any) {
+    console.error("Error in GET /homebase/events:", err);
+    return res.status(500).json({
+      ok: false,
+      error: err?.message ?? "Unknown error",
+    });
+  }
+});
+
+/**
+ * POST /homebase/events
+ * Creates one Home Base event.
+ */
+app.post("/homebase/events", async (req: Request, res: Response) => {
+  try {
+    const {
+      title,
+      startsAt,
+      endsAt,
+      category = "general",
+      location,
+      notes,
+    } = req.body ?? {};
+
+    const cleanTitle = String(title ?? "").trim();
+    const cleanCategory = String(category ?? "general").trim() || "general";
+    const cleanLocation = location == null ? null : String(location).trim()
+    const cleanNotes = notes == null ? null : String(notes).trim()
+
+    if (!cleanTitle || !startsAt) {
+      return res.status(400).json({
+        ok: false,
+        error: "title and startsAt are required",
+      });
+    }
+
+    const startDate = new Date(startsAt);
+    if (Number.isNaN(startDate.getTime())) {
+      return res.status(400).json({
+        ok: false,
+        error: "Invalid startsAt value",
+      });
+    }
+
+    let endDate = null;
+    if (endsAt) {
+      const parsedEnd = new Date(endsAt);
+      if (Number.isNaN(parsedEnd.getTime())) {
+        return res.status(400).json({
+          ok: false,
+          error: "Invalid endsAt value",
+        });
+      }
+      endDate = parsedEnd;
+    }
+
+    const eventId = randomUUID();
+
+    const result = await pool.query(
+      `
+      INSERT INTO "HomeBaseEvent"
+        ("id", "title", "startsAt", "endsAt", "category", "location", "notes", "createdAt", "updatedAt")
+      VALUES
+        ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+      RETURNING *;
+      `,
+      [
+        eventId,
+        cleanTitle,
+        startDate.toISOString(),
+        endDate ? endDate.toISOString() : null,
+        cleanCategory,
+        cleanLocation || null,
+        cleanNotes || null,
+      ],
+    );
+
+    return res.status(200).json({
+      ok: true,
+      event: result.rows[0],
+    });
+  } catch (err: any) {
+    console.error("Error in POST /homebase/events:", err);
+    return res.status(500).json({
+      ok: false,
+      error: err?.message ?? "Unknown error",
+    });
+  }
+});
+
+
 const PORT = Number(process.env.PORT) || 4000;
 
 app.listen(PORT, () => {

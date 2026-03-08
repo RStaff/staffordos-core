@@ -81,3 +81,19 @@ model HomeBaseNote {
   @@index([createdAt])
 }
 
+
+model HomeBaseEvent {
+  id          String   @id
+  title       String
+  startsAt    DateTime
+  endsAt      DateTime?
+  category    String
+  location    String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+
+  @@index([startsAt])
+  @@index([category, startsAt])
+}
+
