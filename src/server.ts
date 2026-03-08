@@ -1,5 +1,7 @@
 import "dotenv/config";
 import express, { type Request, type Response } from "express";
+import { createServer } from "http";
+import { Server as SocketIOServer } from "socket.io";
 import path from "path";
 import { fileURLToPath } from "url";
 import bodyParser from "body-parser";
@@ -33,6 +35,13 @@ const __dirname = path.dirname(__filename);
 const publicDir = path.resolve(__dirname, "../public");
 
 const app = express();
+const httpServer = createServer(app);
+const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
 app.use(bodyParser.json());
 app.use(express.static(publicDir));
 
@@ -825,6 +834,24 @@ app.post("/abando/recovery-events", async (req: Request, res: Response) => {
       ]
     );
 
+    const io = req.app.get("io");
+
+    if (io) {
+      const event = result.rows[0];
+
+      io.to(`shop:${event.shopDomain}`).emit("recovery_event_created", {
+        type: "recovery_event_created",
+        shopDomain: event.shopDomain,
+        recoveryEvent: event,
+      });
+
+      io.to("founder:global").emit("recovery_event_created", {
+        type: "recovery_event_created",
+        shopDomain: event.shopDomain,
+        recoveryEvent: event,
+      });
+    }
+
     return res.status(200).json({
       ok: true,
       recoveryEvent: result.rows[0],
@@ -971,8 +998,34 @@ app.post("/abando/merchant-health", async (req: Request, res: Response) => {
   }
 });
 
+
+io.on("connection", (socket) => {
+  socket.on("subscribe:shop", (shopDomain: string) => {
+    const cleanShop = String(shopDomain || "").trim();
+    if (!cleanShop) return;
+    socket.join(`shop:${cleanShop}`);
+  });
+
+  socket.on("unsubscribe:shop", (shopDomain: string) => {
+    const cleanShop = String(shopDomain || "").trim();
+    if (!cleanShop) return;
+    socket.leave(`shop:${cleanShop}`);
+  });
+
+  socket.on("subscribe:founder", () => {
+    socket.join("founder:global");
+  });
+
+  socket.on("unsubscribe:founder", () => {
+    socket.leave("founder:global");
+  });
+});
+
+app.set("io", io);
+
+
 const PORT = Number(process.env.PORT) || 4000;
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`StaffordOS Command Center API listening on port ${PORT}`);
 });
