@@ -48,6 +48,10 @@ app.get("/home", (_req: Request, res: Response) => {
   res.sendFile(path.join(publicDir, "home.html"));
 });
 
+app.get("/rossllm", (_req: Request, res: Response) => {
+  res.sendFile(path.join(publicDir, "rossllm.html"));
+});
+
 /**
  * Health check – sanity for StaffordOS Command Center
  */

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RossLLM</title>
+  <style>
+    :root{
+      --bg:#081225;
+      --panel:#101a33;
+      --panel2:#13203d;
+      --text:#eef2ff;
+      --muted:#a9b4d0;
+      --accent:#5b8cff;
+      --border:#243252;
+      --good:#19c37d;
+      --user:#1f3f77;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      background:linear-gradient(180deg,#07101f 0%, #0a1428 100%);
+      color:var(--text);
+    }
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      padding:28px 18px 40px;
+    }
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      flex-wrap:wrap;
+      margin-bottom:20px;
+    }
+    .title{
+      margin:0;
+      font-size:38px;
+      font-weight:800;
+      letter-spacing:-0.03em;
+    }
+    .subtitle{
+      margin-top:8px;
+      color:var(--muted);
+      max-width:760px;
+      font-size:15px;
+    }
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    a.btn, button{
+      border:1px solid var(--border);
+      background:var(--panel2);
+      color:var(--text);
+      padding:12px 16px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:600;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .primary{
+      background:var(--accent);
+      border-color:transparent;
+    }
+    .layout{
+      display:grid;
+      grid-template-columns:320px 1fr;
+      gap:16px;
+    }
+    .card{
+      background:rgba(16,26,51,.94);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:16px;
+      box-shadow:0 8px 30px rgba(0,0,0,.18);
+    }
+    .section-title{
+      margin:0 0 12px;
+      font-size:18px;
+      font-weight:800;
+    }
+    .muted{color:var(--muted)}
+    .quick-actions{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .quick-btn{
+      width:100%;
+      text-align:left;
+      justify-content:flex-start;
+    }
+    .chat-shell{
+      display:flex;
+      flex-direction:column;
+      min-height:70vh;
+    }
+    .messages{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      overflow:auto;
+      padding-right:4px;
+    }
+    .msg{
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px;
+      max-width:92%;
+      white-space:pre-wrap;
+      line-height:1.45;
+    }
+    .msg.user{
+      align-self:flex-end;
+      background:rgba(31,63,119,.7);
+    }
+    .msg.assistant{
+      align-self:flex-start;
+      background:rgba(19,32,61,.75);
+    }
+    .composer{
+      display:grid;
+      grid-template-columns:180px 1fr auto;
+      gap:10px;
+      margin-top:16px;
+    }
+    select, input{
+      width:100%;
+      border:1px solid var(--border);
+      background:rgba(19,32,61,.85);
+      color:var(--text);
+      padding:12px;
+      border-radius:12px;
+      font:inherit;
+    }
+    pre{
+      margin:0;
+      white-space:pre-wrap;
+      word-break:break-word;
+      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+      font-size:13px;
+      color:#dbe7ff;
+    }
+    .status{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    @media (max-width: 900px){
+      .layout{grid-template-columns:1fr}
+      .composer{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1 class="title">RossLLM</h1>
+        <div class="subtitle">
+          Conversational interface for StaffordOS modules. Version 1 uses live StaffordOS endpoints for Home Base and Founder Ops.
+        </div>
+      </div>
+      <div class="actions">
+        <a class="btn" href="/home">Home Base</a>
+        <a class="btn" href="/command-center">Command Center</a>
+        <a class="btn primary" href="/health">API Health</a>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="card">
+        <h2 class="section-title">Quick queries</h2>
+        <div class="quick-actions">
+          <button class="quick-btn" data-query="Show my Home Base notes">Show my Home Base notes</button>
+          <button class="quick-btn" data-query="Show my upcoming events">Show my upcoming events</button>
+          <button class="quick-btn" data-query="List Abando merchants">List Abando merchants</button>
+          <button class="quick-btn" data-query="Show stats for demo-store.myshopify.com">Show stats for demo-store.myshopify.com</button>
+        </div>
+
+        <h2 class="section-title" style="margin-top:18px;">Current scope</h2>
+        <div class="muted">
+          RossLLM UI v1 translates a handful of natural-language commands into StaffordOS endpoint calls.
+        </div>
+
+        <div class="status" id="sidebarStatus">Ready.</div>
+      </div>
+
+      <div class="card chat-shell">
+        <div class="messages" id="messages"></div>
+
+        <div class="composer">
+          <select id="mode">
+            <option value="auto">Auto</option>
+            <option value="home">Home Base</option>
+            <option value="founder">Founder Ops</option>
+          </select>
+          <input id="prompt" type="text" placeholder="Ask RossLLM something…" />
+          <button id="sendBtn" class="primary">Send</button>
+        </div>
+
+        <div class="status" id="statusLine">RossLLM is ready.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const messagesEl = document.getElementById("messages");
+    const promptEl = document.getElementById("prompt");
+    const sendBtn = document.getElementById("sendBtn");
+    const modeEl = document.getElementById("mode");
+    const statusLine = document.getElementById("statusLine");
+    const sidebarStatus = document.getElementById("sidebarStatus");
+
+    function addMessage(role, content, isJson) {
+      const div = document.createElement("div");
+      div.className = "msg " + role;
+      if (isJson) {
+        const pre = document.createElement("pre");
+        pre.textContent = content;
+        div.appendChild(pre);
+      } else {
+        div.textContent = content;
+      }
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function setStatus(msg) {
+      statusLine.textContent = msg;
+      sidebarStatus.textContent = msg;
+    }
+
+    async function getJson(url, options) {
+      const res = await fetch(url, options);
+      const text = await res.text();
+      let data = null;
+
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error("Non-JSON response from " + url + ": " + text.slice(0, 200));
+      }
+
+      if (!res.ok || data.ok === false) {
+        throw new Error((data && data.error) || ("Request failed for " + url));
+      }
+      return data;
+    }
+
+    async function handleQuery(raw) {
+      const q = String(raw || "").trim();
+      const mode = modeEl.value;
+
+      if (!q) return;
+
+      addMessage("user", q, false);
+      setStatus("RossLLM is thinking…");
+
+      const lower = q.toLowerCase();
+
+      try {
+        let result = null;
+        let summary = "";
+
+        if (
+          lower.includes("home base notes") ||
+          lower.includes("show my notes") ||
+          (mode === "home" && lower.includes("notes"))
+        ) {
+          result = await getJson("/homebase/notes?limit=25");
+          summary = `Found ${result.count} note(s).`;
+        } else if (
+          lower.includes("upcoming events") ||
+          lower.includes("show my events") ||
+          lower.includes("schedule") ||
+          (mode === "home" && lower.includes("events"))
+        ) {
+          result = await getJson("/homebase/events");
+          summary = `Found ${result.count} event(s).`;
+        } else if (
+          lower.includes("abando merchants") ||
+          lower.includes("list merchants") ||
+          (mode === "founder" && lower.includes("merchants"))
+        ) {
+          result = await getJson("/abando/merchants");
+          summary = `Found ${result.count} merchant(s).`;
+        } else if (
+          lower.includes("stats for") ||
+          lower.includes("merchant stats")
+        ) {
+          const match = q.match(/([a-z0-9-]+\.myshopify\.com)/i);
+          const shop = match ? match[1] : "demo-store.myshopify.com";
+          result = await getJson(`/abando/merchant/${encodeURIComponent(shop)}/stats?limit=10`);
+          const statCount = Array.isArray(result.stats) ? result.stats.length : 0;
+          summary = `Found ${statCount} stat row(s) for ${shop}.`;
+        } else {
+          summary =
+            "RossLLM UI v1 understands these queries:\n" +
+            "- Show my Home Base notes\n" +
+            "- Show my upcoming events\n" +
+            "- List Abando merchants\n" +
+            "- Show stats for demo-store.myshopify.com";
+          addMessage("assistant", summary, false);
+          setStatus("Ready.");
+          return;
+        }
+
+        addMessage("assistant", summary, false);
+        addMessage("assistant", JSON.stringify(result, null, 2), true);
+        setStatus("Ready.");
+      } catch (err) {
+        console.error(err);
+        addMessage("assistant", err && err.message ? err.message : String(err), false);
+        setStatus("Request failed.");
+      }
+    }
+
+    sendBtn.addEventListener("click", () => {
+      const q = promptEl.value;
+      promptEl.value = "";
+      handleQuery(q);
+    });
+
+    promptEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        sendBtn.click();
+      }
+    });
+
+    document.querySelectorAll("[data-query]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        handleQuery(btn.getAttribute("data-query") || "");
+      });
+    });
+
+    addMessage(
+      "assistant",
+      "RossLLM UI v1 is live. Try a quick query from the left or ask for notes, events, merchants, or merchant stats.",
+      false
+    );
+  </script>
+</body>
+</html>
