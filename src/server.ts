@@ -616,6 +616,357 @@ app.post("/homebase/events", async (req: Request, res: Response) => {
 });
 
 
+
+/**
+ * GET /abando/analytics/overview
+ * Returns high-level founder analytics for Command Center.
+ */
+app.get("/abando/analytics/overview", async (_req: Request, res: Response) => {
+  try {
+    const merchantsRes = await pool.query(
+      `
+      SELECT
+        COUNT(*)::int AS total_merchants,
+        COUNT(*) FILTER (WHERE "status" = 'healthy')::int AS healthy_merchants,
+        COUNT(*) FILTER (WHERE "status" = 'watch')::int AS watch_merchants,
+        COUNT(*) FILTER (WHERE "status" = 'broken')::int AS broken_merchants,
+        COUNT(*) FILTER (WHERE "status" = 'inactive')::int AS inactive_merchants
+      FROM "AbandoMerchant";
+      `
+    );
+
+    const statsRes = await pool.query(
+      `
+      SELECT
+        COALESCE(SUM("revenueRecoveredCents"), 0)::bigint AS total_revenue_cents,
+        COALESCE(SUM("cartsRecovered"), 0)::int AS total_carts_recovered,
+        COALESCE(SUM("cartsAbandoned"), 0)::int AS total_carts_abandoned,
+        COALESCE(MAX("date"), NULL) AS latest_stat_date
+      FROM "AbandoMerchantDailyStat";
+      `
+    );
+
+    const recentStatsRes = await pool.query(
+      `
+      SELECT
+        s.*,
+        m."shopDomain",
+        m."displayName"
+      FROM "AbandoMerchantDailyStat" s
+      JOIN "AbandoMerchant" m
+        ON m."id" = s."merchantId"
+      ORDER BY s."date" DESC, s."updatedAt" DESC
+      LIMIT 8;
+      `
+    );
+
+    const merchantMixRes = await pool.query(
+      `
+      SELECT
+        "status",
+        COUNT(*)::int AS count
+      FROM "AbandoMerchant"
+      GROUP BY "status"
+      ORDER BY count DESC, "status" ASC;
+      `
+    );
+
+    return res.status(200).json({
+      ok: true,
+      overview: {
+        ...(merchantsRes.rows[0] || {}),
+        ...(statsRes.rows[0] || {}),
+      },
+      merchantMix: merchantMixRes.rows,
+      recentStats: recentStatsRes.rows,
+    });
+  } catch (err: any) {
+    console.error("Error in GET /abando/analytics/overview:", err);
+    return res.status(500).json({
+      ok: false,
+      error: err?.message ?? "Unknown error",
+    });
+  }
+});
+
+
+
+/**
+ * GET /abando/recovery-events
+ * Optional query params:
+ *   ?shopDomain=demo-store.myshopify.com
+ *   ?limit=20
+ */
+app.get("/abando/recovery-events", async (req: Request, res: Response) => {
+  try {
+    const shopDomain = String(req.query.shopDomain || "").trim();
+    const limitRaw = Number(req.query.limit || 20);
+    const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 100) : 20;
+
+    let result;
+
+    if (shopDomain) {
+      result = await pool.query(
+        `
+        SELECT *
+        FROM "AbandoRecoveryEvent"
+        WHERE "shopDomain" = $1
+        ORDER BY "detectedAt" DESC, "createdAt" DESC
+        LIMIT $2
+        `,
+        [shopDomain, limit]
+      );
+    } else {
+      result = await pool.query(
+        `
+        SELECT *
+        FROM "AbandoRecoveryEvent"
+        ORDER BY "detectedAt" DESC, "createdAt" DESC
+        LIMIT $1
+        `,
+        [limit]
+      );
+    }
+
+    return res.status(200).json({
+      ok: true,
+      recoveryEvents: result.rows,
+      count: result.rows.length,
+    });
+  } catch (err: any) {
+    console.error("Error in GET /abando/recovery-events:", err);
+    return res.status(500).json({
+      ok: false,
+      error: err?.message ?? "Unknown error",
+    });
+  }
+});
+
+/**
+ * POST /abando/recovery-events
+ */
+app.post("/abando/recovery-events", async (req: Request, res: Response) => {
+  try {
+    const {
+      shopDomain,
+      cartId,
+      checkoutId,
+      customerId,
+      orderId,
+      cartValueCents = 0,
+      status = "detected",
+      detectedAt,
+      messageSentAt,
+      recoveredAt,
+      recoveredRevenueCents = 0,
+      playbook,
+    } = req.body ?? {};
+
+    const cleanShopDomain = String(shopDomain || "").trim();
+    const cleanStatus = String(status || "detected").trim();
+
+    if (!cleanShopDomain) {
+      return res.status(400).json({
+        ok: false,
+        error: "shopDomain is required",
+      });
+    }
+
+    const merchantRes = await pool.query(
+      `SELECT "id" FROM "AbandoMerchant" WHERE "shopDomain" = $1 LIMIT 1`,
+      [cleanShopDomain]
+    );
+
+    if (merchantRes.rowCount === 0) {
+      return res.status(404).json({
+        ok: false,
+        error: "Merchant not found for given shopDomain",
+      });
+    }
+
+    const merchantId: string = merchantRes.rows[0].id;
+    const recoveryEventId = randomUUID();
+
+    const detectedDate = detectedAt ? new Date(detectedAt) : new Date();
+    const messageSentDate = messageSentAt ? new Date(messageSentAt) : null;
+    const recoveredDate = recoveredAt ? new Date(recoveredAt) : null;
+
+    const result = await pool.query(
+      `
+      INSERT INTO "AbandoRecoveryEvent"
+        ("id", "merchantId", "shopDomain", "cartId", "checkoutId", "customerId", "orderId",
+         "cartValueCents", "status", "detectedAt", "messageSentAt", "recoveredAt",
+         "recoveredRevenueCents", "playbook", "createdAt", "updatedAt")
+      VALUES
+        ($1, $2, $3, $4, $5, $6, $7,
+         $8, $9, $10, $11, $12,
+         $13, $14, NOW(), NOW())
+      RETURNING *;
+      `,
+      [
+        recoveryEventId,
+        merchantId,
+        cleanShopDomain,
+        cartId ?? null,
+        checkoutId ?? null,
+        customerId ?? null,
+        orderId ?? null,
+        Number(cartValueCents || 0),
+        cleanStatus,
+        detectedDate.toISOString(),
+        messageSentDate ? messageSentDate.toISOString() : null,
+        recoveredDate ? recoveredDate.toISOString() : null,
+        Number(recoveredRevenueCents || 0),
+        playbook ?? null,
+      ]
+    );
+
+    return res.status(200).json({
+      ok: true,
+      recoveryEvent: result.rows[0],
+    });
+  } catch (err: any) {
+    console.error("Error in POST /abando/recovery-events:", err);
+    return res.status(500).json({
+      ok: false,
+      error: err?.message ?? "Unknown error",
+    });
+  }
+});
+
+
+
+/**
+ * GET /abando/merchant-health
+ */
+app.get("/abando/merchant-health", async (req: Request, res: Response) => {
+  try {
+    const shopDomain = String(req.query.shopDomain || "").trim();
+
+    let result;
+
+    if (shopDomain) {
+      result = await pool.query(
+        `SELECT * FROM "AbandoMerchantHealth" WHERE "shopDomain" = $1 LIMIT 1`,
+        [shopDomain]
+      );
+
+      return res.json({
+        ok: true,
+        health: result.rows[0] ?? null
+      });
+    }
+
+    result = await pool.query(
+      `SELECT * FROM "AbandoMerchantHealth" ORDER BY "updatedAt" DESC`
+    );
+
+    return res.json({
+      ok: true,
+      merchantHealth: result.rows
+    });
+
+  } catch (err: any) {
+    console.error("Error in GET /abando/merchant-health:", err);
+    res.status(500).json({
+      ok: false,
+      error: err?.message ?? "Unknown error"
+    });
+  }
+});
+
+
+/**
+ * POST /abando/merchant-health
+ */
+app.post("/abando/merchant-health", async (req: Request, res: Response) => {
+  try {
+    const {
+      shopDomain,
+      status = "healthy",
+      lastWebhookAt,
+      lastRecoveryAt,
+      lastNotificationAt,
+      openIssueCount = 0,
+      notes,
+    } = req.body ?? {};
+
+    const cleanShopDomain = String(shopDomain || "").trim();
+    const cleanStatus = String(status || "healthy").trim();
+
+    if (!cleanShopDomain) {
+      return res.status(400).json({
+        ok: false,
+        error: "shopDomain is required"
+      });
+    }
+
+    const merchantRes = await pool.query(
+      `SELECT "id" FROM "AbandoMerchant" WHERE "shopDomain" = $1 LIMIT 1`,
+      [cleanShopDomain]
+    );
+
+    if (merchantRes.rowCount === 0) {
+      return res.status(404).json({
+        ok: false,
+        error: "Merchant not found for given shopDomain"
+      });
+    }
+
+    const merchantId = merchantRes.rows[0].id;
+    const healthId = randomUUID();
+
+    const webhookDate = lastWebhookAt ? new Date(lastWebhookAt) : null;
+    const recoveryDate = lastRecoveryAt ? new Date(lastRecoveryAt) : null;
+    const notificationDate = lastNotificationAt ? new Date(lastNotificationAt) : null;
+
+    const result = await pool.query(
+      `
+      INSERT INTO "AbandoMerchantHealth"
+        ("id", "merchantId", "shopDomain", "status", "lastWebhookAt", "lastRecoveryAt",
+         "lastNotificationAt", "openIssueCount", "notes", "createdAt", "updatedAt")
+      VALUES
+        ($1, $2, $3, $4, $5, $6,
+         $7, $8, $9, NOW(), NOW())
+      ON CONFLICT ("shopDomain")
+      DO UPDATE SET
+        "merchantId" = EXCLUDED."merchantId",
+        "status" = EXCLUDED."status",
+        "lastWebhookAt" = EXCLUDED."lastWebhookAt",
+        "lastRecoveryAt" = EXCLUDED."lastRecoveryAt",
+        "lastNotificationAt" = EXCLUDED."lastNotificationAt",
+        "openIssueCount" = EXCLUDED."openIssueCount",
+        "notes" = EXCLUDED."notes",
+        "updatedAt" = NOW()
+      RETURNING *;
+      `,
+      [
+        healthId,
+        merchantId,
+        cleanShopDomain,
+        cleanStatus,
+        webhookDate ? webhookDate.toISOString() : null,
+        recoveryDate ? recoveryDate.toISOString() : null,
+        notificationDate ? notificationDate.toISOString() : null,
+        Number(openIssueCount || 0),
+        notes ?? null,
+      ]
+    );
+
+    return res.json({
+      ok: true,
+      health: result.rows[0]
+    });
+
+  } catch (err: any) {
+    console.error("Error in POST /abando/merchant-health:", err);
+    return res.status(500).json({
+      ok: false,
+      error: err?.message ?? "Unknown error"
+    });
+  }
+});
+
 const PORT = Number(process.env.PORT) || 4000;
 
 app.listen(PORT, () => {
