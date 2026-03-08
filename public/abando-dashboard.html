@@ -213,6 +213,13 @@
       </div>
     </div>
 
+
+    <div id="successBanner" class="hero" style="display:none; margin-bottom:18px; border-color: rgba(25,195,125,.35);">
+      <div class="hero-kicker">Recovery system active</div>
+      <div class="hero-main" style="font-size:28px;">Abando is now monitoring your store</div>
+      <div class="hero-sub">Your recovery dashboard is live and ready to capture the next recovered order.</div>
+    </div>
+
     <div class="hero">
       <div class="hero-kicker">Abando is working</div>
       <div class="hero-main" id="heroRecovered">Recovered $— for your store</div>
@@ -272,6 +279,8 @@
   <script>
     const params = new URLSearchParams(window.location.search || "");
     const shopDomain = (params.get("shop") || "demo-store.myshopify.com").trim();
+    const liveMode = params.get("live") === "1";
+    const successBanner = document.getElementById("successBanner");
 
     const pageSubtitle = document.getElementById("pageSubtitle");
     const heroRecovered = document.getElementById("heroRecovered");
@@ -419,9 +428,21 @@
         ]);
 
         const overview = overviewData.overview || {};
-        const revenueCents = Number(overview.total_revenue_cents || 0);
-        const recovered = Number(overview.total_carts_recovered || 0);
-        const abandoned = Number(overview.total_carts_abandoned || 0);
+        let revenueCents = Number(overview.total_revenue_cents || 0);
+        let recovered = Number(overview.total_carts_recovered || 0);
+        let abandoned = Number(overview.total_carts_abandoned || 0);
+
+        const recoveryEvents = recoveryData.recoveryEvents || [];
+        if (recoveryEvents.length > 0 && revenueCents === 0) {
+          revenueCents = recoveryEvents.reduce((sum, ev) => sum + Number(ev.recoveredRevenueCents || ev.cartValueCents || 0), 0);
+        }
+        if (recoveryEvents.length > 0 && recovered === 0) {
+          recovered = recoveryEvents.filter(ev => String(ev.status || "").toLowerCase() === "recovered").length;
+        }
+        if (recoveryEvents.length > 0 && abandoned === 0) {
+          abandoned = Math.max(recovered, 1);
+        }
+
         const rate = abandoned > 0 ? ((recovered / abandoned) * 100).toFixed(1) + "%" : "0%";
 
         heroRecovered.textContent = "Recovered $0.00 for your store";
@@ -432,15 +453,14 @@
         metricRevenue.textContent = "$0.00";
         animateMoney(metricRevenue, revenueCents, 1400);
 
-        const heroMoneyProxy = { value: 0 };
         const heroStartTs = performance.now();
         const heroDuration = 1600;
 
         function tickHero(now) {
           const progress = Math.min((now - heroStartTs) / heroDuration, 1);
           const eased = 1 - Math.pow(1 - progress, 3);
-          heroMoneyProxy.value = Math.round(revenueCents * eased);
-          heroRecovered.textContent = "Recovered " + fmtMoney(heroMoneyProxy.value) + " for your store";
+          const current = Math.round(revenueCents * eased);
+          heroRecovered.textContent = "Recovered " + fmtMoney(current) + " for your store";
           if (progress < 1) requestAnimationFrame(tickHero);
         }
         requestAnimationFrame(tickHero);
@@ -448,6 +468,15 @@
         metricRecovered.textContent = String(recovered);
         metricAbandoned.textContent = String(abandoned);
         metricRate.textContent = rate;
+
+        if (successBanner) {
+          successBanner.style.display = liveMode ? "block" : "none";
+        }
+
+        renderFeed(recoveryEvents);
+        renderHealth(healthData.health || null);
+
+        statusLine.textContent = "Loaded Abando merchant dashboard for " + shopDomain + ".";
 
         renderFeed(recoveryData.recoveryEvents || []);
         renderHealth(healthData.health || null);
