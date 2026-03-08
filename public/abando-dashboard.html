@@ -187,6 +187,27 @@
       color:var(--muted);
       font-size:13px;
     }
+    .live-flash{
+      position:fixed;
+      top:18px;
+      right:18px;
+      z-index:9999;
+      padding:12px 16px;
+      border-radius:12px;
+      border:1px solid rgba(25,195,125,.35);
+      background:rgba(10,25,20,.95);
+      color:#d8ffe9;
+      font-weight:700;
+      box-shadow:0 10px 30px rgba(0,0,0,.28);
+      opacity:0;
+      transform:translateY(-8px);
+      pointer-events:none;
+      transition:opacity .25s ease, transform .25s ease;
+    }
+    .live-flash.show{
+      opacity:1;
+      transform:translateY(0);
+    }
     .monitor-chip{
       display:inline-flex;
       align-items:center;
@@ -342,6 +363,16 @@
     
     // ---- WebSocket Live Feed ----
     let socket = null;
+    const liveFlash = document.getElementById("liveFlash");
+
+    function flashLiveRecovery(message = "Live recovery received") {
+      if (!liveFlash) return;
+      liveFlash.textContent = message;
+      liveFlash.classList.add("show");
+      setTimeout(() => {
+        liveFlash.classList.remove("show");
+      }, 2200);
+    }
 
     function connectSocket(shopDomain) {
       if (!window.io) {
@@ -363,19 +394,30 @@
       socket.on("recovery_event_created", (event) => {
         console.log("[socket] recovery_event_created", event);
 
-        if (!event || !event.shopDomain) return;
+        const payload = event && event.recoveryEvent ? event.recoveryEvent : event;
+        const payloadShop = event && event.shopDomain ? event.shopDomain : payload && payload.shopDomain;
 
-        const feed = document.getElementById("recoveryFeed");
-        if (!feed) return;
+        if (!payload || payloadShop !== shopDomain) return;
 
-        const li = document.createElement("li");
-        li.textContent =
-          "Recovered $" +
-          (event.recoveredRevenueCents / 100).toFixed(2) +
-          " via " +
-          (event.playbook || "playbook");
+        prependRecoveryEvent(payload);
 
-        feed.prepend(li);
+        const addedRevenue = Number(payload.recoveredRevenueCents || payload.cartValueCents || 0);
+        currentRevenueCents += addedRevenue;
+        currentRecovered += String(payload.status || "").toLowerCase() === "recovered" ? 1 : 0;
+        currentAbandoned = Math.max(currentAbandoned, currentRecovered);
+
+        heroRecovered.textContent = "Recovered " + fmtMoney(currentRevenueCents) + " for your store";
+        heroSub.textContent = "Abando has recovered " + currentRecovered + " cart(s) and is actively monitoring checkout activity.";
+
+        metricRevenue.textContent = fmtMoney(currentRevenueCents);
+        metricRecovered.textContent = String(currentRecovered);
+        metricAbandoned.textContent = String(currentAbandoned);
+        metricRate.textContent = currentAbandoned > 0
+          ? ((currentRecovered / currentAbandoned) * 100).toFixed(1) + "%"
+          : "0%";
+
+        statusLine.textContent = "Live recovery received for " + shopDomain + ".";
+        flashLiveRecovery("Live recovery received: " + fmtMoney(addedRevenue));
       });
     }
 
@@ -585,5 +627,6 @@ const refreshBtn = document.getElementById("refreshBtn");
     refreshAll();
     connectSocket(shopDomain);
   </script>
+  <div id="liveFlash" class="live-flash">Live recovery received</div>
 </body>
 </html>
