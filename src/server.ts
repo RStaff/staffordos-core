@@ -52,6 +52,10 @@ app.get("/rossllm", (_req: Request, res: Response) => {
   res.sendFile(path.join(publicDir, "rossllm.html"));
 });
 
+app.get("/abando-dashboard", (_req: Request, res: Response) => {
+  res.sendFile(path.join(publicDir, "abando-dashboard.html"));
+});
+
 /**
  * Health check – sanity for StaffordOS Command Center
  */

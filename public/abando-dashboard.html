@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Abando Recovery Dashboard</title>
+  <style>
+    :root{
+      --bg:#081225;
+      --panel:#101a33;
+      --panel2:#13203d;
+      --text:#eef2ff;
+      --muted:#a9b4d0;
+      --accent:#5b8cff;
+      --border:#243252;
+      --good:#19c37d;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      background:linear-gradient(180deg,#07101f 0%, #0a1428 100%);
+      color:var(--text);
+    }
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      padding:28px 18px 48px;
+    }
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:16px;
+      flex-wrap:wrap;
+      margin-bottom:22px;
+    }
+    .title{
+      font-size:38px;
+      font-weight:800;
+      letter-spacing:-0.03em;
+      margin:0;
+    }
+    .subtitle{
+      color:var(--muted);
+      margin-top:8px;
+      font-size:15px;
+      max-width:760px;
+    }
+    .hero{
+      background:linear-gradient(135deg, rgba(25,195,125,.18), rgba(91,140,255,.12));
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:20px;
+      margin-bottom:18px;
+    }
+    .hero-kicker{
+      color:var(--good);
+      font-weight:800;
+      font-size:13px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      margin-bottom:8px;
+    }
+    .hero-main{
+      font-size:34px;
+      font-weight:900;
+      margin-bottom:8px;
+    }
+    .hero-sub{
+      color:var(--muted);
+      font-size:15px;
+    }
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    a.btn, button{
+      border:1px solid var(--border);
+      background:var(--panel2);
+      color:var(--text);
+      padding:12px 16px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:600;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .primary{
+      background:var(--accent);
+      border-color:transparent;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:16px;
+      margin-bottom:18px;
+    }
+    .card{
+      background:rgba(16,26,51,.94);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:18px;
+      box-shadow:0 8px 30px rgba(0,0,0,.18);
+    }
+    .metric-label{
+      color:var(--muted);
+      font-size:14px;
+      margin-bottom:10px;
+    }
+    .metric-value{
+      font-size:30px;
+      font-weight:800;
+      letter-spacing:-0.03em;
+    }
+    .two-col{
+      display:grid;
+      grid-template-columns:1.2fr .8fr;
+      gap:16px;
+    }
+    .section-title{
+      margin:0 0 12px;
+      font-size:20px;
+      font-weight:800;
+    }
+    .feed{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .feed-item{
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px;
+      background:rgba(19,32,61,.58);
+    }
+    .feed-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:6px;
+    }
+    .money{
+      color:var(--good);
+      font-size:20px;
+      font-weight:900;
+    }
+    .muted{color:var(--muted)}
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      font-weight:700;
+      border:1px solid var(--border);
+      background:#0d1830;
+      text-transform:lowercase;
+    }
+    .dot{
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      display:inline-block;
+    }
+    .dot.healthy{background:var(--good)}
+    .dot.watch{background:var(--warn)}
+    .dot.broken{background:var(--bad)}
+    .dot.inactive{background:#64748b}
+    .insight{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:12px;
+      background:rgba(19,32,61,.55);
+      margin-bottom:10px;
+    }
+    .status-line{
+      margin-top:16px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .two-col{grid-template-columns:1fr}
+    }
+    @media (max-width: 640px){
+      .grid{grid-template-columns:1fr}
+      .title{font-size:30px}
+      .hero-main{font-size:28px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1 class="title">Abando Recovery Dashboard</h1>
+        <div class="subtitle" id="pageSubtitle">
+          Real-time recovery view for your Shopify store.
+        </div>
+      </div>
+      <div class="actions">
+        <button id="refreshBtn" class="primary" type="button">Refresh</button>
+        <a class="btn" href="/dashboard">Back to Abando</a>
+      </div>
+    </div>
+
+    <div class="hero">
+      <div class="hero-kicker">Abando is working</div>
+      <div class="hero-main" id="heroRecovered">Recovered $— for your store</div>
+      <div class="hero-sub" id="heroSub">Loading live recovery data…</div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="metric-label">Recovered revenue</div>
+        <div class="metric-value" id="metricRevenue">$—</div>
+      </div>
+      <div class="card">
+        <div class="metric-label">Recovered carts</div>
+        <div class="metric-value" id="metricRecovered">—</div>
+      </div>
+      <div class="card">
+        <div class="metric-label">Abandoned carts</div>
+        <div class="metric-value" id="metricAbandoned">—</div>
+      </div>
+      <div class="card">
+        <div class="metric-label">Recovery rate</div>
+        <div class="metric-value" id="metricRate">—</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <h2 class="section-title">Recent recoveries</h2>
+        <div id="feed" class="feed"></div>
+        <div id="feedEmpty" class="status-line" style="display:none;">No recovery events yet.</div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">System status</h2>
+        <div class="insight">
+          <div class="metric-label">Merchant health</div>
+          <div id="healthPill" class="pill"><span class="dot inactive"></span>loading</div>
+        </div>
+        <div class="insight">
+          <div class="metric-label">Last webhook</div>
+          <div id="lastWebhook">—</div>
+        </div>
+        <div class="insight">
+          <div class="metric-label">Last recovery</div>
+          <div id="lastRecovery">—</div>
+        </div>
+        <div class="insight">
+          <div class="metric-label">Notes</div>
+          <div id="healthNotes" class="muted">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-line" id="statusLine">Loading Abando dashboard…</div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search || "");
+    const shopDomain = (params.get("shop") || "demo-store.myshopify.com").trim();
+
+    const pageSubtitle = document.getElementById("pageSubtitle");
+    const heroRecovered = document.getElementById("heroRecovered");
+    const heroSub = document.getElementById("heroSub");
+
+    const metricRevenue = document.getElementById("metricRevenue");
+    const metricRecovered = document.getElementById("metricRecovered");
+    const metricAbandoned = document.getElementById("metricAbandoned");
+    const metricRate = document.getElementById("metricRate");
+
+    const feed = document.getElementById("feed");
+    const feedEmpty = document.getElementById("feedEmpty");
+
+    const healthPill = document.getElementById("healthPill");
+    const lastWebhook = document.getElementById("lastWebhook");
+    const lastRecovery = document.getElementById("lastRecovery");
+    const healthNotes = document.getElementById("healthNotes");
+
+    const refreshBtn = document.getElementById("refreshBtn");
+    const statusLine = document.getElementById("statusLine");
+
+    function fmtMoney(cents) {
+      const value = Number(cents || 0) / 100;
+      return value.toLocaleString(undefined, { style: "currency", currency: "USD" });
+    }
+
+    function fmtDate(v) {
+      if (!v) return "—";
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) return String(v);
+      return d.toLocaleString();
+    }
+
+    function esc(v) {
+      return String(v ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    function statusClass(status) {
+      const s = String(status || "inactive").toLowerCase();
+      if (s === "healthy") return "healthy";
+      if (s === "watch") return "watch";
+      if (s === "broken") return "broken";
+      return "inactive";
+    }
+
+    async function getJson(url) {
+      const res = await fetch(url);
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error("Non-JSON response from " + url + ": " + text.slice(0, 200));
+      }
+      if (!res.ok || data.ok === false) {
+        throw new Error((data && data.error) || ("Request failed for " + url));
+      }
+      return data;
+    }
+
+    async function loadOverview() {
+      return await getJson("/abando/analytics/overview");
+    }
+
+    async function loadRecoveryEvents() {
+      return await getJson("/abando/recovery-events?shopDomain=" + encodeURIComponent(shopDomain) + "&limit=10");
+    }
+
+    async function loadHealth() {
+      return await getJson("/abando/merchant-health?shopDomain=" + encodeURIComponent(shopDomain));
+    }
+
+    function renderFeed(events) {
+      feed.innerHTML = "";
+
+      if (!events.length) {
+        feedEmpty.style.display = "block";
+        return;
+      }
+
+      feedEmpty.style.display = "none";
+
+      events.forEach((event) => {
+        const item = document.createElement("div");
+        item.className = "feed-item";
+
+        item.innerHTML = `
+          <div class="feed-top">
+            <div>
+              <div class="money">${fmtMoney(event.recoveredRevenueCents || event.cartValueCents || 0)}</div>
+              <div>${esc(event.status || "detected")} via ${esc(event.playbook || "default")}</div>
+            </div>
+            <div class="muted">${fmtDate(event.recoveredAt || event.detectedAt || event.createdAt)}</div>
+          </div>
+          <div class="muted">
+            Cart: ${esc(event.cartId || "—")} · Order: ${esc(event.orderId || "—")}
+          </div>
+        `;
+        feed.appendChild(item);
+      });
+    }
+
+    function renderHealth(health) {
+      const status = health?.status || "inactive";
+      const cls = statusClass(status);
+      healthPill.innerHTML = '<span class="dot ' + cls + '"></span>' + esc(status);
+      lastWebhook.textContent = fmtDate(health?.lastWebhookAt);
+      lastRecovery.textContent = fmtDate(health?.lastRecoveryAt);
+      healthNotes.textContent = health?.notes || "—";
+    }
+
+    async function refreshAll() {
+      try {
+        statusLine.textContent = "Loading Abando dashboard…";
+        refreshBtn.disabled = true;
+
+        pageSubtitle.textContent = "Recovery view for " + shopDomain;
+
+        const [overviewData, recoveryData, healthData] = await Promise.all([
+          loadOverview(),
+          loadRecoveryEvents(),
+          loadHealth()
+        ]);
+
+        const overview = overviewData.overview || {};
+        const revenueCents = Number(overview.total_revenue_cents || 0);
+        const recovered = Number(overview.total_carts_recovered || 0);
+        const abandoned = Number(overview.total_carts_abandoned || 0);
+        const rate = abandoned > 0 ? ((recovered / abandoned) * 100).toFixed(1) + "%" : "0%";
+
+        heroRecovered.textContent = "Recovered " + fmtMoney(revenueCents) + " for your store";
+        heroSub.textContent = recovered > 0
+          ? ("Abando has recovered " + recovered + " cart(s) and is actively monitoring checkout activity.")
+          : "Abando is active and monitoring for the next recovery opportunity.";
+
+        metricRevenue.textContent = fmtMoney(revenueCents);
+        metricRecovered.textContent = String(recovered);
+        metricAbandoned.textContent = String(abandoned);
+        metricRate.textContent = rate;
+
+        renderFeed(recoveryData.recoveryEvents || []);
+        renderHealth(healthData.health || null);
+
+        statusLine.textContent = "Loaded Abando merchant dashboard for " + shopDomain + ".";
+      } catch (err) {
+        console.error(err);
+        statusLine.textContent = err && err.message ? err.message : String(err);
+      } finally {
+        refreshBtn.disabled = false;
+      }
+    }
+
+    refreshBtn.addEventListener("click", refreshAll);
+    refreshAll();
+  </script>
+</body>
+</html>
