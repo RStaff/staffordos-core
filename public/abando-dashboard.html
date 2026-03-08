@@ -471,6 +471,17 @@
 
         if (successBanner) {
           successBanner.style.display = liveMode ? "block" : "none";
+
+          if (liveMode) {
+            setTimeout(() => {
+              successBanner.style.transition = "opacity .6s ease";
+              successBanner.style.opacity = "0";
+
+              setTimeout(() => {
+                successBanner.style.display = "none";
+              }, 600);
+            }, 6000);
+          }
         }
 
         renderFeed(recoveryEvents);
