@@ -298,6 +298,25 @@
       return value.toLocaleString(undefined, { style: "currency", currency: "USD" });
     }
 
+    function animateMoney(el, cents, duration = 1200) {
+      const target = Number(cents || 0);
+      const start = 0;
+      const startTs = performance.now();
+
+      function tick(now) {
+        const progress = Math.min((now - startTs) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = Math.round(start + (target - start) * eased);
+        el.textContent = fmtMoney(current);
+
+        if (progress < 1) {
+          requestAnimationFrame(tick);
+        }
+      }
+
+      requestAnimationFrame(tick);
+    }
+
     function fmtDate(v) {
       if (!v) return "—";
       const d = new Date(v);
@@ -405,12 +424,27 @@
         const abandoned = Number(overview.total_carts_abandoned || 0);
         const rate = abandoned > 0 ? ((recovered / abandoned) * 100).toFixed(1) + "%" : "0%";
 
-        heroRecovered.textContent = "Recovered " + fmtMoney(revenueCents) + " for your store";
+        heroRecovered.textContent = "Recovered $0.00 for your store";
         heroSub.textContent = recovered > 0
           ? ("Abando has recovered " + recovered + " cart(s) and is actively monitoring checkout activity.")
           : "Abando is active and monitoring for the next recovery opportunity.";
 
-        metricRevenue.textContent = fmtMoney(revenueCents);
+        metricRevenue.textContent = "$0.00";
+        animateMoney(metricRevenue, revenueCents, 1400);
+
+        const heroMoneyProxy = { value: 0 };
+        const heroStartTs = performance.now();
+        const heroDuration = 1600;
+
+        function tickHero(now) {
+          const progress = Math.min((now - heroStartTs) / heroDuration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          heroMoneyProxy.value = Math.round(revenueCents * eased);
+          heroRecovered.textContent = "Recovered " + fmtMoney(heroMoneyProxy.value) + " for your store";
+          if (progress < 1) requestAnimationFrame(tickHero);
+        }
+        requestAnimationFrame(tickHero);
+
         metricRecovered.textContent = String(recovered);
         metricAbandoned.textContent = String(abandoned);
         metricRate.textContent = rate;
