@@ -313,19 +313,39 @@ function connectFounderSocket(){
       rateEl.innerText = fmtRate(currentRecovered, currentAbandoned)
     }
 
-    const todayEl = document.getElementById("revenueToday")
-    if (todayEl) {
-      const eventDate = new Date(ev.recoveredAt || ev.createdAt || Date.now())
-      const now = new Date()
-      const isToday =
-        eventDate.getFullYear() === now.getFullYear() &&
-        eventDate.getMonth() === now.getMonth() &&
-        eventDate.getDate() === now.getDate()
+    const eventDate = new Date(ev.recoveredAt || ev.createdAt || Date.now())
+    const now = new Date()
 
-      if (isToday) {
-        const currentToday = Number((todayEl.innerText || "$0").replace(/[^0-9.-]/g, "")) || 0
-        todayEl.innerText = fmtMoney((currentToday * 100) + addedRevenue)
-      }
+    const isToday =
+      eventDate.getFullYear() === now.getFullYear() &&
+      eventDate.getMonth() === now.getMonth() &&
+      eventDate.getDate() === now.getDate()
+
+    const startOfWeek = new Date(now)
+    const day = startOfWeek.getDay()
+    const diffToMonday = (day + 6) % 7
+    startOfWeek.setDate(startOfWeek.getDate() - diffToMonday)
+    startOfWeek.setHours(0, 0, 0, 0)
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+
+    const todayEl = document.getElementById("revenueToday")
+    const weekEl = document.getElementById("revenueWeek")
+    const monthEl = document.getElementById("revenueMonth")
+
+    if (isToday && todayEl) {
+      const currentToday = Number((todayEl.innerText || "$0").replace(/[^0-9.-]/g, "")) || 0
+      todayEl.innerText = fmtMoney((currentToday * 100) + addedRevenue)
+    }
+
+    if (eventDate >= startOfWeek && weekEl) {
+      const currentWeek = Number((weekEl.innerText || "$0").replace(/[^0-9.-]/g, "")) || 0
+      weekEl.innerText = fmtMoney((currentWeek * 100) + addedRevenue)
+    }
+
+    if (eventDate >= startOfMonth && monthEl) {
+      const currentMonth = Number((monthEl.innerText || "$0").replace(/[^0-9.-]/g, "")) || 0
+      monthEl.innerText = fmtMoney((currentMonth * 100) + addedRevenue)
     }
 
     await refreshChannelCards()
