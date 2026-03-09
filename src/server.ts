@@ -638,6 +638,69 @@ app.post("/homebase/events", async (req: Request, res: Response) => {
 
 
 
+
+
+app.get("/abando/analytics/at-risk-merchants", async (_req: Request, res: Response) => {
+  try {
+
+    const result = await pool.query(`
+      SELECT
+        m."shopDomain" AS shop_domain,
+        COALESCE(SUM(r."recoveredRevenueCents"),0) AS recovered_revenue_cents,
+        COUNT(r.*) AS recovered_carts,
+        MAX(r."createdAt") AS last_recovery
+      FROM "AbandoMerchant" m
+      LEFT JOIN "AbandoRecoveryEvent" r
+        ON r."shopDomain" = m."shopDomain"
+      GROUP BY m."shopDomain"
+    `)
+
+    const merchants = (result.rows || []).map((r: any) => {
+
+      const revenue = Number(r.recovered_revenue_cents || 0)
+      const carts = Number(r.recovered_carts || 0)
+
+      let risk_score = 0
+      let reason = "Healthy"
+
+      if(revenue < 50000){
+        risk_score += 1
+        reason = "Low revenue"
+      }
+
+      if(carts < 3){
+        risk_score += 1
+        reason = "Low recovery activity"
+      }
+
+      if(!r.last_recovery){
+        risk_score += 2
+        reason = "No recoveries yet"
+      }
+
+      return {
+        shop_domain: r.shop_domain,
+        revenue_cents: revenue,
+        recovered_carts: carts,
+        last_recovery: r.last_recovery,
+        risk_score,
+        reason
+      }
+    })
+
+    merchants.sort((a: any, b: any) => b.risk_score - a.risk_score)
+
+    return res.json({
+      ok:true,
+      merchants: merchants.slice(0,5)
+    })
+
+  } catch(err:any){
+    console.error(err)
+    return res.status(500).json({ok:false})
+  }
+})
+
 app.get("/abando/analytics/merchant-leaderboard", async (_req: Request, res: Response) => {
   try {
     const result = await pool.query(`
