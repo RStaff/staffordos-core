@@ -313,6 +313,21 @@ function connectFounderSocket(){
       rateEl.innerText = fmtRate(currentRecovered, currentAbandoned)
     }
 
+    const todayEl = document.getElementById("revenueToday")
+    if (todayEl) {
+      const eventDate = new Date(ev.recoveredAt || ev.createdAt || Date.now())
+      const now = new Date()
+      const isToday =
+        eventDate.getFullYear() === now.getFullYear() &&
+        eventDate.getMonth() === now.getMonth() &&
+        eventDate.getDate() === now.getDate()
+
+      if (isToday) {
+        const currentToday = Number((todayEl.innerText || "$0").replace(/[^0-9.-]/g, "")) || 0
+        todayEl.innerText = fmtMoney((currentToday * 100) + addedRevenue)
+      }
+    }
+
     await refreshChannelCards()
     prependLiveActivity(ev)
   })
