@@ -101,6 +101,21 @@ cursor:pointer;
 <div class="label">Recovery Rate</div>
 <div id="founderRecoveryRate" class="metric">--</div>
 </div>
+
+<div class="card">
+<div class="label">Revenue Today</div>
+<div id="revenueToday" class="metric">$--</div>
+</div>
+
+<div class="card">
+<div class="label">Revenue This Week</div>
+<div id="revenueWeek" class="metric">$--</div>
+</div>
+
+<div class="card">
+<div class="label">Revenue This Month</div>
+<div id="revenueMonth" class="metric">$--</div>
+</div>
 </div>
 
 <h2>Merchant Status</h2>
@@ -118,11 +133,69 @@ cursor:pointer;
 </tbody>
 </table>
 
+
+<h2 style="margin-top:40px;">Revenue Growth</h2>
+<div style="background:#131c33;padding:20px;border-radius:12px;margin-top:12px;">
+  <canvas id="revenueChartCanvas" height="80"></canvas>
+</div>
+
 <h2>Live Activity</h2>
 <div id="liveActivity" style="display:flex;flex-direction:column;gap:12px;margin-top:20px;"></div>
 
 <script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+
+
+
+
+let revenueChart = null
+let revenueHistory = []
+
+function initRevenueChart(){
+
+  const ctx = document.getElementById("revenueChartCanvas")
+  if(!ctx) return
+
+  revenueChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: [],
+      datasets: [{
+        label: "Recovered Revenue ($)",
+        data: [],
+        borderColor: "#4ade80",
+        backgroundColor: "rgba(74,222,128,0.2)",
+        tension: 0.35
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { display: false },
+        y: { beginAtZero: true }
+      }
+    }
+  })
+}
+
+function pushRevenuePoint(amount){
+
+  const t = new Date().toLocaleTimeString()
+
+  revenueHistory.push(amount)
+
+  if(revenueChart){
+    revenueChart.data.labels.push(t)
+    revenueChart.data.datasets[0].data.push(
+      (revenueChart.data.datasets[0].data.slice(-1)[0] || 0) + amount/100
+    )
+
+    revenueChart.update()
+  }
+
+}
 
 
 let socket = null
@@ -227,6 +300,7 @@ function connectFounderSocket(){
 
     const addedRevenue = Number(ev.recoveredRevenueCents || ev.cartValueCents || 0)
     currentRevenueCents += addedRevenue
+    pushRevenuePoint(addedRevenue)
     currentRecovered += String(ev.status || "").toLowerCase() === "recovered" ? 1 : 0
     currentAbandoned = Math.max(currentAbandoned, currentRecovered)
 
@@ -246,6 +320,8 @@ function connectFounderSocket(){
 
 
 async function loadAnalytics(){
+
+initRevenueChart()
 
 const res = await fetch("/abando/analytics/overview")
 const data = await res.json()

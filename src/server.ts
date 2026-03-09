@@ -636,6 +636,41 @@ app.post("/homebase/events", async (req: Request, res: Response) => {
  */
 
 
+
+app.get("/abando/analytics/revenue-periods", async (_req: Request, res: Response) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        COALESCE(SUM(CASE
+          WHEN "createdAt" >= date_trunc('day', now())
+          THEN "recoveredRevenueCents" ELSE 0 END), 0)::bigint AS revenue_today_cents,
+        COALESCE(SUM(CASE
+          WHEN "createdAt" >= date_trunc('week', now())
+          THEN "recoveredRevenueCents" ELSE 0 END), 0)::bigint AS revenue_week_cents,
+        COALESCE(SUM(CASE
+          WHEN "createdAt" >= date_trunc('month', now())
+          THEN "recoveredRevenueCents" ELSE 0 END), 0)::bigint AS revenue_month_cents
+      FROM "AbandoRecoveryEvent"
+      WHERE LOWER(COALESCE("status", '')) = 'recovered'
+    `);
+
+    return res.status(200).json({
+      ok: true,
+      periods: result.rows[0] ?? {
+        revenue_today_cents: 0,
+        revenue_week_cents: 0,
+        revenue_month_cents: 0,
+      },
+    });
+  } catch (err: any) {
+    console.error("Error in GET /abando/analytics/revenue-periods:", err);
+    return res.status(500).json({
+      ok: false,
+      error: err?.message ?? "Unknown error",
+    });
+  }
+});
+
 app.get("/abando/analytics/founder-metrics", async (_req: Request, res: Response) => {
   try {
     const merchantRes = await pool.query(`
