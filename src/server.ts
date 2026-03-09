@@ -637,6 +637,35 @@ app.post("/homebase/events", async (req: Request, res: Response) => {
 
 
 
+
+app.get("/abando/analytics/merchant-leaderboard", async (_req: Request, res: Response) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        "shopDomain" AS shop_domain,
+        COUNT(*)::int AS recovered_carts,
+        COALESCE(SUM("recoveredRevenueCents"), 0)::bigint AS recovered_revenue_cents,
+        MAX("createdAt") AS last_recovery_at
+      FROM "AbandoRecoveryEvent"
+      WHERE LOWER(COALESCE("status", '')) = 'recovered'
+      GROUP BY "shopDomain"
+      ORDER BY recovered_revenue_cents DESC, recovered_carts DESC, shop_domain ASC
+      LIMIT 10
+    `);
+
+    return res.status(200).json({
+      ok: true,
+      merchants: result.rows,
+    });
+  } catch (err: any) {
+    console.error("Error in GET /abando/analytics/merchant-leaderboard:", err);
+    return res.status(500).json({
+      ok: false,
+      error: err?.message ?? "Unknown error",
+    });
+  }
+});
+
 app.get("/abando/analytics/revenue-periods", async (_req: Request, res: Response) => {
   try {
     const result = await pool.query(`

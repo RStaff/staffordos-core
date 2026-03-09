@@ -415,6 +415,26 @@ fmtMoney(emailRow ? Number(emailRow.recovered_revenue_cents || 0) : 0)
 document.getElementById("smsRevenue").innerText =
 fmtMoney(smsRow ? Number(smsRow.recovered_revenue_cents || 0) : 0)
 
+
+const leaderboardRes = await fetch("/abando/analytics/merchant-leaderboard")
+const leaderboardData = await leaderboardRes.json()
+
+const leaderboardBody = document.getElementById("merchantLeaderboardBody")
+if (leaderboardBody) {
+  leaderboardBody.innerHTML = ""
+
+  ;(leaderboardData.merchants || []).forEach(row => {
+    const tr = document.createElement("tr")
+    tr.innerHTML = `
+      <td style="padding:10px 8px;border-bottom:1px solid #1e2a4a;">${row.shop_domain || "unknown shop"}</td>
+      <td style="padding:10px 8px;border-bottom:1px solid #1e2a4a;">${fmtMoney(row.recovered_revenue_cents || 0)}</td>
+      <td style="padding:10px 8px;border-bottom:1px solid #1e2a4a;">${row.recovered_carts || 0}</td>
+      <td style="padding:10px 8px;border-bottom:1px solid #1e2a4a;">${fmtRelativeTime(row.last_recovery_at)}</td>
+    `
+    leaderboardBody.appendChild(tr)
+  })
+}
+
 const activity = document.getElementById("liveActivity")
 if (activity) {
   activity.innerHTML = ""
