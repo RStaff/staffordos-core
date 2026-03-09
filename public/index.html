@@ -124,6 +124,8 @@ let socket = null
 let currentRevenueCents = 0
 let currentRecovered = 0
 let currentAbandoned = 0
+let currentEmailRevenueCents = 0
+let currentSmsRevenueCents = 0
 const seenRecoveryEventIds = new Set()
 
 function fmtMoney(cents){
@@ -199,6 +201,18 @@ function connectFounderSocket(){
     document.getElementById("revenue").innerText = fmtMoney(currentRevenueCents)
     document.getElementById("carts").innerText = currentRecovered
     document.getElementById("messages").innerText = currentAbandoned
+
+    const liveChannel = String(ev.channel || "email").toLowerCase()
+    if (liveChannel === "sms") {
+      currentSmsRevenueCents += addedRevenue
+    } else {
+      currentEmailRevenueCents += addedRevenue
+    }
+
+    const emailEl = document.getElementById("emailRevenue")
+    const smsEl = document.getElementById("smsRevenue")
+    if (emailEl) emailEl.innerText = fmtMoney(currentEmailRevenueCents)
+    if (smsEl) smsEl.innerText = fmtMoney(currentSmsRevenueCents)
 
     prependLiveActivity(ev)
   })
