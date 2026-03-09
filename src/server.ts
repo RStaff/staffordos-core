@@ -653,8 +653,8 @@ app.get("/abando/analytics/founder-metrics", async (_req: Request, res: Response
 
     const abandonedRes = await pool.query(`
       SELECT
-        COALESCE(SUM("cartsAbandoned"), 0)::bigint AS total_carts_abandoned
-      FROM "AbandoMerchantDailyStat"
+        COUNT(*)::bigint AS total_carts_abandoned
+      FROM "AbandoRecoveryEvent"
     `);
 
     return res.status(200).json({
