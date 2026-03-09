@@ -139,6 +139,22 @@ cursor:pointer;
   <canvas id="revenueChartCanvas" height="80"></canvas>
 </div>
 
+
+<h2>Merchant Leaderboard</h2>
+<div style="background:#131c33;padding:20px;border-radius:12px;margin-top:12px;margin-bottom:32px;">
+  <table style="width:100%;border-collapse:collapse;">
+    <thead>
+      <tr>
+        <th style="text-align:left;">Merchant</th>
+        <th style="text-align:left;">Recovered Revenue</th>
+        <th style="text-align:left;">Recovered Carts</th>
+        <th style="text-align:left;">Last Recovery</th>
+      </tr>
+    </thead>
+    <tbody id="merchantLeaderboardBody"></tbody>
+  </table>
+</div>
+
 <h2>Live Activity</h2>
 <div id="liveActivity" style="display:flex;flex-direction:column;gap:12px;margin-top:20px;"></div>
 
@@ -152,7 +168,13 @@ cursor:pointer;
 let revenueChart = null
 let revenueHistory = []
 
-function initRevenueChart(){
+function initRevenueChart()
+
+  if (revenueChart && revenueChart.data.labels.length === 0) {
+    revenueChart.data.labels = ["Start"]
+    revenueChart.data.datasets[0].data = [Number(currentRevenueCents || 0) / 100]
+    revenueChart.update()
+  }{
 
   const ctx = document.getElementById("revenueChartCanvas")
   if(!ctx) return
