@@ -86,6 +86,16 @@ cursor:pointer;
 <div class="label">Abandoned Carts</div>
 <div id="messages" class="metric">--</div>
 </div>
+
+<div class="card">
+<div class="label">Email Revenue</div>
+<div id="emailRevenue" class="metric">$--</div>
+</div>
+
+<div class="card">
+<div class="label">SMS Revenue</div>
+<div id="smsRevenue" class="metric">$--</div>
+</div>
 </div>
 
 <h2>Merchant Status</h2>
@@ -233,6 +243,18 @@ tr.innerHTML=`
 table.appendChild(tr)
 
 })
+
+const channelRes = await fetch("/abando/analytics/channel-summary")
+const channelData = await channelRes.json()
+
+const emailRow = (channelData.channels || []).find(c => String(c.channel || "").toLowerCase() === "email")
+const smsRow = (channelData.channels || []).find(c => String(c.channel || "").toLowerCase() === "sms")
+
+document.getElementById("emailRevenue").innerText =
+fmtMoney(emailRow ? Number(emailRow.recovered_revenue_cents || 0) : 0)
+
+document.getElementById("smsRevenue").innerText =
+fmtMoney(smsRow ? Number(smsRow.recovered_revenue_cents || 0) : 0)
 
 const activity = document.getElementById("liveActivity")
 if (activity) {

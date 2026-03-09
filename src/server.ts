@@ -634,6 +634,35 @@ app.post("/homebase/events", async (req: Request, res: Response) => {
  * GET /abando/analytics/overview
  * Returns high-level founder analytics for Command Center.
  */
+
+app.get("/abando/analytics/channel-summary", async (_req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      `
+      SELECT
+        COALESCE("channel", 'email') AS channel,
+        COUNT(*)::int AS recovery_count,
+        COALESCE(SUM("recoveredRevenueCents"), 0)::bigint AS recovered_revenue_cents
+      FROM "AbandoRecoveryEvent"
+      WHERE LOWER(COALESCE("status", '')) = 'recovered'
+      GROUP BY COALESCE("channel", 'email')
+      ORDER BY recovered_revenue_cents DESC, channel ASC
+      `
+    );
+
+    return res.status(200).json({
+      ok: true,
+      channels: result.rows,
+    });
+  } catch (err: any) {
+    console.error("Error in GET /abando/analytics/channel-summary:", err);
+    return res.status(500).json({
+      ok: false,
+      error: err?.message ?? "Unknown error",
+    });
+  }
+});
+
 app.get("/abando/analytics/overview", async (_req: Request, res: Response) => {
   try {
     const merchantsRes = await pool.query(
