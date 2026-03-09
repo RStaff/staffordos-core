@@ -773,10 +773,12 @@ app.post("/abando/recovery-events", async (req: Request, res: Response) => {
       recoveredAt,
       recoveredRevenueCents = 0,
       playbook,
+      channel = "email",
     } = req.body ?? {};
 
     const cleanShopDomain = String(shopDomain || "").trim();
     const cleanStatus = String(status || "detected").trim();
+    const cleanChannel = String(channel || "email").trim().toLowerCase();
 
     if (!cleanShopDomain) {
       return res.status(400).json({
@@ -846,7 +848,7 @@ app.post("/abando/recovery-events", async (req: Request, res: Response) => {
       INSERT INTO "AbandoRecoveryEvent"
         ("id", "merchantId", "shopDomain", "cartId", "checkoutId", "customerId", "orderId",
          "cartValueCents", "status", "detectedAt", "messageSentAt", "recoveredAt",
-         "recoveredRevenueCents", "playbook", "createdAt", "updatedAt")
+         "recoveredRevenueCents", "playbook", "channel", "createdAt", "updatedAt")
       VALUES
         ($1, $2, $3, $4, $5, $6, $7,
          $8, $9, $10, $11, $12,
@@ -868,6 +870,7 @@ app.post("/abando/recovery-events", async (req: Request, res: Response) => {
         recoveredDate ? recoveredDate.toISOString() : null,
         Number(recoveredRevenueCents || 0),
         playbook ?? null,
+        cleanChannel,
       ]
     );
 
