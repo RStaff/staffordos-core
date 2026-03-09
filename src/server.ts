@@ -635,6 +635,46 @@ app.post("/homebase/events", async (req: Request, res: Response) => {
  * Returns high-level founder analytics for Command Center.
  */
 
+
+app.get("/abando/analytics/founder-metrics", async (_req: Request, res: Response) => {
+  try {
+    const merchantRes = await pool.query(`
+      SELECT COUNT(*)::int AS total_merchants
+      FROM "AbandoMerchant"
+    `);
+
+    const recoveryRes = await pool.query(`
+      SELECT
+        COALESCE(SUM("recoveredRevenueCents"), 0)::bigint AS total_revenue_cents,
+        COUNT(*)::int AS total_carts_recovered
+      FROM "AbandoRecoveryEvent"
+      WHERE LOWER(COALESCE("status", '')) = 'recovered'
+    `);
+
+    const abandonedRes = await pool.query(`
+      SELECT
+        COALESCE(SUM("cartsAbandoned"), 0)::bigint AS total_carts_abandoned
+      FROM "AbandoMerchantDailyStat"
+    `);
+
+    return res.status(200).json({
+      ok: true,
+      metrics: {
+        total_merchants: merchantRes.rows[0]?.total_merchants ?? 0,
+        total_revenue_cents: recoveryRes.rows[0]?.total_revenue_cents ?? 0,
+        total_carts_recovered: recoveryRes.rows[0]?.total_carts_recovered ?? 0,
+        total_carts_abandoned: abandonedRes.rows[0]?.total_carts_abandoned ?? 0,
+      },
+    });
+  } catch (err: any) {
+    console.error("Error in GET /abando/analytics/founder-metrics:", err);
+    return res.status(500).json({
+      ok: false,
+      error: err?.message ?? "Unknown error",
+    });
+  }
+});
+
 app.get("/abando/analytics/channel-summary", async (_req: Request, res: Response) => {
   try {
     const result = await pool.query(

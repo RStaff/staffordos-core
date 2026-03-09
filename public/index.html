@@ -243,12 +243,15 @@ async function loadAnalytics(){
 const res = await fetch("/abando/analytics/overview")
 const data = await res.json()
 
-document.getElementById("merchants").innerText =
-data.overview.total_merchants ?? 0
+const founderRes = await fetch("/abando/analytics/founder-metrics")
+const founderData = await founderRes.json()
 
-currentRevenueCents = Number(data.overview.total_revenue_cents || 0)
-currentRecovered = Number(data.overview.total_carts_recovered || 0)
-currentAbandoned = Number(data.overview.total_carts_abandoned || 0)
+document.getElementById("merchants").innerText =
+founderData.metrics?.total_merchants ?? data.overview.total_merchants ?? 0
+
+currentRevenueCents = Number(founderData.metrics?.total_revenue_cents || 0)
+currentRecovered = Number(founderData.metrics?.total_carts_recovered || 0)
+currentAbandoned = Number(founderData.metrics?.total_carts_abandoned || 0)
 
 document.getElementById("revenue").innerText =
 fmtMoney(currentRevenueCents)
