@@ -151,6 +151,7 @@ cursor:pointer;
 <th style="text-align:left;">Issue</th>
 <th style="text-align:left;">Recovered Revenue</th>
 <th style="text-align:left;">Recovered Carts</th>
+<th style="text-align:left;">Recommended Action</th>
 </tr>
 </thead>
 <tbody id="atRiskBody"></tbody>
@@ -475,6 +476,7 @@ if(riskBody){
       <td style="padding:10px;color:#f87171;">${m.reason}</td>
       <td style="padding:10px;">${fmtMoney(m.revenue_cents)}</td>
       <td style="padding:10px;">${m.recovered_carts}</td>
+      <td style="padding:10px;color:#60a5fa;">${m.action || "None"}</td>
     `
 
     riskBody.appendChild(tr)

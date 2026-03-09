@@ -662,20 +662,20 @@ app.get("/abando/analytics/at-risk-merchants", async (_req: Request, res: Respon
 
       let risk_score = 0
       let reason = "Healthy"
-
-      if(revenue < 50000){
-        risk_score += 1
-        reason = "Low revenue"
-      }
-
-      if(carts < 3){
-        risk_score += 1
-        reason = "Low recovery activity"
-      }
+      let action = "None"
 
       if(!r.last_recovery){
         risk_score += 2
         reason = "No recoveries yet"
+        action = "Test recovery flow"
+      } else if(revenue < 50000){
+        risk_score += 1
+        reason = "Low revenue"
+        action = "Enable SMS playbook"
+      } else if(carts < 3){
+        risk_score += 1
+        reason = "Low recovery activity"
+        action = "Increase abandoned cart triggers"
       }
 
       return {
@@ -684,7 +684,8 @@ app.get("/abando/analytics/at-risk-merchants", async (_req: Request, res: Respon
         recovered_carts: carts,
         last_recovery: r.last_recovery,
         risk_score,
-        reason
+        reason,
+        action
       }
     })
 
