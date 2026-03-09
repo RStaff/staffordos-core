@@ -151,7 +151,7 @@ function prependLiveActivity(ev){
       <div style="font-weight:800;">${fmtMoney(money)} recovered</div>
       <div style="opacity:.72;">${fmtRelativeTime(ev.recoveredAt || ev.createdAt)}</div>
     </div>
-    <div style="opacity:.9;">${ev.shopDomain || "unknown shop"} via ${ev.playbook || "playbook"}</div>
+    <div style="opacity:.9;">${ev.shopDomain || "unknown shop"} via ${ev.channel || "email"} · ${ev.playbook || "playbook"}</div>
     <div style="opacity:.72;margin-top:6px;">Cart: ${ev.cartId || "—"} · Order: ${ev.orderId || "—"}</div>
   `
 

@@ -380,7 +380,7 @@
         <div class="feed-top">
           <div>
             <div class="money">$${money}</div>
-            <div>recovered via ${ev.playbook || "playbook"}</div>
+            <div>recovered via ${ev.channel || "email"} · ${ev.playbook || "playbook"}</div>
           </div>
           <div class="muted">${fmtRelativeTime(ev.recoveredAt || ev.createdAt)}</div>
         </div>
@@ -585,7 +585,7 @@ const refreshBtn = document.getElementById("refreshBtn");
           <div class="feed-top">
             <div>
               <div class="money">${fmtMoney(event.recoveredRevenueCents || event.cartValueCents || 0)}</div>
-              <div>${esc(event.status || "detected")} via ${esc(event.playbook || "default")}</div>
+              <div>${esc(event.status || "detected")} via ${esc(event.channel || "email")} · ${esc(event.playbook || "default")}</div>
             </div>
             <div class="muted">${fmtRelativeTime(event.recoveredAt || event.detectedAt || event.createdAt)}</div>
           </div>
