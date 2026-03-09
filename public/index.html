@@ -96,6 +96,11 @@ cursor:pointer;
 <div class="label">SMS Revenue</div>
 <div id="smsRevenue" class="metric">$--</div>
 </div>
+
+<div class="card">
+<div class="label">Recovery Rate</div>
+<div id="founderRecoveryRate" class="metric">--</div>
+</div>
 </div>
 
 <h2>Merchant Status</h2>
@@ -127,6 +132,15 @@ let currentAbandoned = 0
 let currentEmailRevenueCents = 0
 let currentSmsRevenueCents = 0
 const seenRecoveryEventIds = new Set()
+
+
+
+function fmtRate(recovered, abandoned){
+  const r = Number(recovered || 0)
+  const a = Number(abandoned || 0)
+  if (a <= 0) return "0%"
+  return ((r / a) * 100).toFixed(1) + "%"
+}
 
 function fmtMoney(cents){
   return "$" + ((Number(cents || 0) / 100).toFixed(0))
@@ -206,6 +220,7 @@ function connectFounderSocket(){
 
   socket.on("recovery_event_created", async (payload) => {
     const ev = payload && payload.recoveryEvent ? payload.recoveryEvent : payload
+    console.log("[founder-socket] recovery_event_created", ev)
     if(!ev) return
     if(ev.id && seenRecoveryEventIds.has(ev.id)) return
     if(ev.id) seenRecoveryEventIds.add(ev.id)
@@ -219,20 +234,12 @@ function connectFounderSocket(){
     document.getElementById("carts").innerText = currentRecovered
     document.getElementById("messages").innerText = currentAbandoned
 
-    const liveChannel = String(ev.channel || "email").toLowerCase()
-    if (liveChannel === "sms") {
-      currentSmsRevenueCents += addedRevenue
-    } else {
-      currentEmailRevenueCents += addedRevenue
+    const rateEl = document.getElementById("founderRecoveryRate")
+    if(rateEl){
+      rateEl.innerText = fmtRate(currentRecovered, currentAbandoned)
     }
 
-    const emailEl = document.getElementById("emailRevenue")
-    const smsEl = document.getElementById("smsRevenue")
-    if (emailEl) emailEl.innerText = fmtMoney(currentEmailRevenueCents)
-    if (smsEl) smsEl.innerText = fmtMoney(currentSmsRevenueCents)
-
     await refreshChannelCards()
-
     prependLiveActivity(ev)
   })
 }
@@ -261,6 +268,11 @@ currentRecovered
 
 document.getElementById("messages").innerText =
 currentAbandoned
+
+const rateEl = document.getElementById("founderRecoveryRate")
+if(rateEl){
+  rateEl.innerText = fmtRate(currentRecovered, currentAbandoned)
+}
 
 const table = document.getElementById("merchantTable")
 
