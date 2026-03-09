@@ -157,6 +157,23 @@ cursor:pointer;
 
 
 
+
+
+<h2>Activation Status</h2>
+<div style="background:#131c33;padding:20px;border-radius:12px;margin-bottom:30px;">
+  <table style="width:100%;border-collapse:collapse;">
+    <thead>
+      <tr>
+        <th style="text-align:left;">Merchant</th>
+        <th style="text-align:left;">Status</th>
+        <th style="text-align:left;">Recovered Carts</th>
+        <th style="text-align:left;">Last Recovery</th>
+      </tr>
+    </thead>
+    <tbody id="activationStatusBody"></tbody>
+  </table>
+</div>
+
 <h2>At-Risk Merchants</h2>
 <div style="background:#131c33;padding:20px;border-radius:12px;margin-bottom:30px;">
 <table style="width:100%;border-collapse:collapse;">
@@ -410,7 +427,21 @@ function connectFounderSocket(){
 }
 
 
+
 async function loadAnalytics(){
+
+  const activationRes = await fetch("/abando/analytics/activation-summary")
+  const activationData = await activationRes.json()
+
+  const installedEl = document.getElementById("installedMerchants")
+  const activatedEl = document.getElementById("activatedMerchants")
+  const activationRateEl = document.getElementById("activationRate")
+
+  if(installedEl) installedEl.innerText = activationData.summary?.installed_merchants ?? 0
+  if(activatedEl) activatedEl.innerText = activationData.summary?.activated_merchants ?? 0
+  if(activationRateEl) activationRateEl.innerText = (activationData.summary?.activation_rate ?? 0) + "%"
+
+
 
 initRevenueChart()
 
@@ -473,6 +504,32 @@ fmtMoney(smsRow ? Number(smsRow.recovered_revenue_cents || 0) : 0)
 
 
 
+
+
+const activationStatusRes = await fetch("/abando/analytics/activation-status")
+const activationStatusData = await activationStatusRes.json()
+
+const activationStatusBody = document.getElementById("activationStatusBody")
+
+if (activationStatusBody) {
+  activationStatusBody.innerHTML = ""
+
+  ;(activationStatusData.merchants || []).forEach(m => {
+    const tr = document.createElement("tr")
+
+    const statusColor =
+      m.activation_status === "Activated" ? "#4ade80" : "#fbbf24"
+
+    tr.innerHTML = `
+      <td style="padding:10px;">${m.shop_domain}</td>
+      <td style="padding:10px;color:${statusColor};">${m.activation_status}</td>
+      <td style="padding:10px;">${m.recovered_carts}</td>
+      <td style="padding:10px;">${fmtRelativeTime(m.last_recovery_at)}</td>
+    `
+
+    activationStatusBody.appendChild(tr)
+  })
+}
 
 const riskRes = await fetch("/abando/analytics/at-risk-merchants")
 const riskData = await riskRes.json()
