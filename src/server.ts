@@ -640,6 +640,41 @@ app.post("/homebase/events", async (req: Request, res: Response) => {
 
 
 
+
+app.get("/abando/analytics/activation-summary", async (_req: Request, res: Response) => {
+  try {
+    const installedRes = await pool.query(`
+      SELECT COUNT(*)::int AS installed_merchants
+      FROM "AbandoMerchant"
+    `);
+
+    const activatedRes = await pool.query(`
+      SELECT COUNT(DISTINCT "shopDomain")::int AS activated_merchants
+      FROM "AbandoRecoveryEvent"
+      WHERE LOWER(COALESCE("status", '')) = 'recovered'
+    `);
+
+    const installed = Number(installedRes.rows[0]?.installed_merchants || 0);
+    const activated = Number(activatedRes.rows[0]?.activated_merchants || 0);
+    const rate = installed > 0 ? ((activated / installed) * 100) : 0;
+
+    return res.status(200).json({
+      ok: true,
+      summary: {
+        installed_merchants: installed,
+        activated_merchants: activated,
+        activation_rate: Number(rate.toFixed(1)),
+      },
+    });
+  } catch (err: any) {
+    console.error("Error in GET /abando/analytics/activation-summary:", err);
+    return res.status(500).json({
+      ok: false,
+      error: err?.message ?? "Unknown error",
+    });
+  }
+});
+
 app.get("/abando/analytics/at-risk-merchants", async (_req: Request, res: Response) => {
   try {
 
