@@ -4,6 +4,7 @@
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
+    "test": "npm run build && node --test dist/postgresConnection.test.js",
     "start": "node dist/server.js",
     "dev": "npm run build && npm run start"
   },
