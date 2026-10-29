@@ -7,28 +7,13 @@ import { fileURLToPath } from "url";
 import bodyParser from "body-parser";
 import { Pool } from "pg";
 import { randomUUID } from "crypto";
+import { postgresConnectionOptions } from "./postgresConnection.js";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is not set in environment (.env)");
 }
 
-const databaseUrl = process.env.DATABASE_URL;
-
-const shouldUseSsl =
-  !!databaseUrl &&
-  (databaseUrl.includes("sslmode=require") ||
-    (databaseUrl.includes(".com") && !databaseUrl.includes("localhost")));
-
-const pool = new Pool(
-  shouldUseSsl
-    ? {
-        connectionString: databaseUrl,
-        ssl: { rejectUnauthorized: false },
-      }
-    : {
-        connectionString: databaseUrl,
-      }
-);
+const pool = new Pool(postgresConnectionOptions(process.env.DATABASE_URL));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -1,0 +1,69 @@
+name: Database TLS
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/database-tls.yml"
+      - "package-lock.json"
+      - "package.json"
+      - "src/postgresConnection.test.ts"
+      - "src/postgresConnection.ts"
+      - "src/server.ts"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-policy-and-startup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: staffordos_tls_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d staffordos_tls_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.22.1
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - name: Verify effective pool connection to disposable PostgreSQL
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/staffordos_tls_ci
+        run: >-
+          node --input-type=module -e
+          'import pg from "pg";
+          import { postgresConnectionOptions } from "./dist/postgresConnection.js";
+          const client = new pg.Client(postgresConnectionOptions(process.env.DATABASE_URL));
+          await client.connect();
+          const result = await client.query("SELECT current_database() AS database, ssl FROM pg_stat_ssl WHERE pid = pg_backend_pid()");
+          if (result.rows[0].database !== "staffordos_tls_ci" || result.rows[0].ssl !== false) process.exit(1);
+          await client.end();'
+      - name: Verify actual startup entry point
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/staffordos_tls_ci
+          PORT: "3099"
+        run: |
+          npm start > /tmp/staffordos-core-startup.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if curl --fail --silent http://127.0.0.1:3099/health | grep --quiet '"status":"ok"'; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/staffordos-core-startup.log
+          exit 1
